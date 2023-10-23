@@ -322,16 +322,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 		return nil, genesisErr
 	}
 	log.Info("Initialised chain configuration", "config", chainConfig)
-	// Description of chainConfig is empty now
-	/*
-		log.Info("")
-		log.Info(strings.Repeat("-", 153))
-		for _, line := range strings.Split(chainConfig.Description(), "\n") {
-			log.Info(line)
-		}
-		log.Info(strings.Repeat("-", 153))
-		log.Info("")
-	*/
 
 	bc := &BlockChain{
 		chainConfig:        chainConfig,
@@ -1180,7 +1170,7 @@ func (bc *BlockChain) Stop() {
 		//  - HEAD-127: So we have a hard limit on the number of blocks reexecuted
 		if !bc.cacheConfig.TrieDirtyDisabled {
 			triedb := bc.triedb
-		var once sync.Once
+			var once sync.Once
 
 			for _, offset := range []uint64{0, 1, TriesInMemory - 1} {
 				if number := bc.CurrentBlock().Number.Uint64(); number > offset {
@@ -1191,9 +1181,9 @@ func (bc *BlockChain) Stop() {
 					} else {
 						rawdb.WriteSafePointBlockNumber(bc.db, recent.NumberU64())
 						once.Do(func() {
-						  rawdb.WriteHeadBlockHash(bc.db, recent.Hash())
+							rawdb.WriteHeadBlockHash(bc.db, recent.Hash())
 						})
-          }
+					}
 				}
 			}
 			if snapBase != (common.Hash{}) {
@@ -1276,8 +1266,8 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 	defer bc.wg.Done()
 
 	var (
-		ancientBlocks, liveBlocks     types.Blocks
-		ancientReceipts, liveReceipts []types.Receipts
+		liveBlocks   types.Blocks
+		liveReceipts []types.Receipts
 	)
 	// Do a sanity check that the provided chain is actually ordered and linked
 	for i := 0; i < len(blockChain); i++ {
@@ -1289,11 +1279,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 					blockChain[i-1].Hash().Bytes()[:4], i, blockChain[i].NumberU64(), blockChain[i].Hash().Bytes()[:4], blockChain[i].ParentHash().Bytes()[:4])
 			}
 		}
-		if blockChain[i].NumberU64() <= ancientLimit {
-			ancientBlocks, ancientReceipts = append(ancientBlocks, blockChain[i]), append(ancientReceipts, receiptChain[i])
-		} else {
-			liveBlocks, liveReceipts = append(liveBlocks, blockChain[i]), append(liveReceipts, receiptChain[i])
-		}
+		liveBlocks, liveReceipts = append(liveBlocks, blockChain[i]), append(liveReceipts, receiptChain[i])
 	}
 
 	var (
@@ -1326,115 +1312,6 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		}
 		return false
 	}
-	// writeAncient writes blockchain and corresponding receipt chain into ancient store.
-	//
-	// this function only accepts canonical chain data. All side chain will be reverted
-	// eventually.
-	writeAncient := func(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
-		first := blockChain[0]
-		last := blockChain[len(blockChain)-1]
-
-		// Ensure genesis is in ancients.
-		if first.NumberU64() == 1 {
-			if frozen, _ := bc.db.Ancients(); frozen == 0 {
-				b := bc.genesisBlock
-				td := bc.genesisBlock.Difficulty()
-				writeSize, err := rawdb.WriteAncientBlocks(bc.db, []*types.Block{b}, []types.Receipts{nil}, td)
-				size += writeSize
-				if err != nil {
-					log.Error("Error writing genesis to ancients", "err", err)
-					return 0, err
-				}
-				log.Info("Wrote genesis to ancients")
-			}
-		}
-		// Before writing the blocks to the ancients, we need to ensure that
-		// they correspond to the what the headerchain 'expects'.
-		// We only check the last block/header, since it's a contiguous chain.
-		if !bc.HasHeader(last.Hash(), last.NumberU64()) {
-			return 0, fmt.Errorf("containing header #%d [%x..] unknown", last.Number(), last.Hash().Bytes()[:4])
-		}
-
-		// Write all chain data to ancients.
-		td := bc.GetTd(first.Hash(), first.NumberU64())
-		writeSize, err := rawdb.WriteAncientBlocks(bc.db, blockChain, receiptChain, td)
-		size += writeSize
-		if err != nil {
-			log.Error("Error importing chain data to ancients", "err", err)
-			return 0, err
-		}
-
-		// Write tx indices if any condition is satisfied:
-		// * If user requires to reserve all tx indices(txlookuplimit=0)
-		// * If all ancient tx indices are required to be reserved(txlookuplimit is even higher than ancientlimit)
-		// * If block number is large enough to be regarded as a recent block
-		// It means blocks below the ancientLimit-txlookupLimit won't be indexed.
-		//
-		// But if the `TxIndexTail` is not nil, e.g. Geth is initialized with
-		// an external ancient database, during the setup, blockchain will start
-		// a background routine to re-indexed all indices in [ancients - txlookupLimit, ancients)
-		// range. In this case, all tx indices of newly imported blocks should be
-		// generated.
-		var batch = bc.db.NewBatch()
-		for i, block := range blockChain {
-			if bc.txLookupLimit == 0 || ancientLimit <= bc.txLookupLimit || block.NumberU64() >= ancientLimit-bc.txLookupLimit {
-				rawdb.WriteTxLookupEntriesByBlock(batch, block)
-			} else if rawdb.ReadTxIndexTail(bc.db) != nil {
-				rawdb.WriteTxLookupEntriesByBlock(batch, block)
-			}
-			stats.processed++
-
-			if batch.ValueSize() > ethdb.IdealBatchSize || i == len(blockChain)-1 {
-				size += int64(batch.ValueSize())
-				if err = batch.Write(); err != nil {
-					snapBlock := bc.CurrentSnapBlock().Number.Uint64()
-					if _, err := bc.db.TruncateHead(snapBlock + 1); err != nil {
-						log.Error("Can't truncate ancient store after failed insert", "err", err)
-					}
-					return 0, err
-				}
-				batch.Reset()
-			}
-		}
-
-		// Sync the ancient store explicitly to ensure all data has been flushed to disk.
-		if err := bc.db.Sync(); err != nil {
-			return 0, err
-		}
-		// Update the current snap block because all block data is now present in DB.
-		previousSnapBlock := bc.CurrentSnapBlock().Number.Uint64()
-		if !updateHead(blockChain[len(blockChain)-1]) {
-			// We end up here if the header chain has reorg'ed, and the blocks/receipts
-			// don't match the canonical chain.
-			if _, err := bc.db.TruncateHead(previousSnapBlock + 1); err != nil {
-				log.Error("Can't truncate ancient store after failed insert", "err", err)
-			}
-			return 0, errSideChainReceipts
-		}
-
-		// Delete block data from the main database.
-		batch.Reset()
-		canonHashes := make(map[common.Hash]struct{})
-		for _, block := range blockChain {
-			canonHashes[block.Hash()] = struct{}{}
-			if block.NumberU64() == 0 {
-				continue
-			}
-			rawdb.DeleteCanonicalHash(batch, block.NumberU64())
-			rawdb.DeleteBlockWithoutNumber(batch, block.Hash(), block.NumberU64())
-		}
-		// Delete side chain hash-to-number mappings.
-		for _, nh := range rawdb.ReadAllHashesInRange(bc.db, first.NumberU64(), last.NumberU64()) {
-			if _, canon := canonHashes[nh.Hash]; !canon {
-				rawdb.DeleteHeader(batch, nh.Hash, nh.Number)
-			}
-		}
-		if err := batch.Write(); err != nil {
-			return 0, err
-		}
-		return 0, nil
-	}
-
 	// writeLive writes blockchain and corresponding receipt chain into active store.
 	writeLive := func(blockChain types.Blocks, receiptChain []types.Receipts) (int, error) {
 		skipPresenceCheck := false
@@ -1490,15 +1367,6 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		return 0, nil
 	}
 
-	// Write downloaded chain data and corresponding receipt chain data
-	if len(ancientBlocks) > 0 {
-		if n, err := writeAncient(ancientBlocks, ancientReceipts); err != nil {
-			if err == errInsertionInterrupted {
-				return 0, nil
-			}
-			return n, err
-		}
-	}
 	// Write the tx index tail (block number from where we index) before write any live blocks
 	if len(liveBlocks) > 0 && liveBlocks[0].NumberU64() == ancientLimit+1 {
 		// The tx index tail can only be one of the following two options:
@@ -2961,10 +2829,10 @@ func EnablePersistDiff(limit uint64) BlockChainOption {
 	}
 }
 
-func EnableBlockValidator(chainConfig *params.ChainConfig, engine consensus.Engine, mode VerifyMode, peers verifyPeers) BlockChainOption {
+func EnableBlockValidator(chainConfig *params.ChainConfig, engine consensus.Engine, mode VerifyMode) BlockChainOption {
 	return func(bc *BlockChain) (*BlockChain, error) {
 		if mode.NeedRemoteVerify() {
-			vm, err := NewVerifyManager(bc, peers, mode == InsecureVerify)
+			vm, err := NewVerifyManager(bc, mode == InsecureVerify)
 			if err != nil {
 				return nil, err
 			}

@@ -432,70 +432,6 @@ func checkReceiptsRLP(have, want types.Receipts) error {
 	return nil
 }
 
-func TestAncientStorage(t *testing.T) {
-	// Freezer style fast import the chain.
-	frdir := t.TempDir()
-	db, err := NewDatabaseWithFreezer(NewMemoryDatabase(), frdir, "", false, false, false, false)
-	if err != nil {
-		t.Fatalf("failed to create database with ancient backend")
-	}
-	defer db.Close()
-
-	// Create a test block
-	block := types.NewBlockWithHeader(&types.Header{
-		Number:      big.NewInt(0),
-		Extra:       []byte("test block"),
-		UncleHash:   types.EmptyUncleHash,
-		TxHash:      types.EmptyTxsHash,
-		ReceiptHash: types.EmptyReceiptsHash,
-	})
-	// Ensure nothing non-existent will be read
-	hash, number := block.Hash(), block.NumberU64()
-	if blob := ReadHeaderRLP(db, hash, number); len(blob) > 0 {
-		t.Fatalf("non existent header returned")
-	}
-	if blob := ReadBodyRLP(db, hash, number); len(blob) > 0 {
-		t.Fatalf("non existent body returned")
-	}
-	if blob := ReadReceiptsRLP(db, hash, number); len(blob) > 0 {
-		t.Fatalf("non existent receipts returned")
-	}
-	if blob := ReadTdRLP(db, hash, number); len(blob) > 0 {
-		t.Fatalf("non existent td returned")
-	}
-
-	// Write and verify the header in the database
-	WriteAncientBlocks(db, []*types.Block{block}, []types.Receipts{nil}, big.NewInt(100))
-
-	if blob := ReadHeaderRLP(db, hash, number); len(blob) == 0 {
-		t.Fatalf("no header returned")
-	}
-	if blob := ReadBodyRLP(db, hash, number); len(blob) == 0 {
-		t.Fatalf("no body returned")
-	}
-	if blob := ReadReceiptsRLP(db, hash, number); len(blob) == 0 {
-		t.Fatalf("no receipts returned")
-	}
-	if blob := ReadTdRLP(db, hash, number); len(blob) == 0 {
-		t.Fatalf("no td returned")
-	}
-
-	// Use a fake hash for data retrieval, nothing should be returned.
-	fakeHash := common.BytesToHash([]byte{0x01, 0x02, 0x03})
-	if blob := ReadHeaderRLP(db, fakeHash, number); len(blob) != 0 {
-		t.Fatalf("invalid header returned")
-	}
-	if blob := ReadBodyRLP(db, fakeHash, number); len(blob) != 0 {
-		t.Fatalf("invalid body returned")
-	}
-	if blob := ReadReceiptsRLP(db, fakeHash, number); len(blob) != 0 {
-		t.Fatalf("invalid receipts returned")
-	}
-	if blob := ReadTdRLP(db, fakeHash, number); len(blob) != 0 {
-		t.Fatalf("invalid td returned")
-	}
-}
-
 func TestCanonicalHashIteration(t *testing.T) {
 	var cases = []struct {
 		from, to uint64
@@ -567,49 +503,6 @@ func TestHashesInRange(t *testing.T) {
 	if have, want := len(ReadAllHashes(db, 1)), 1; have != want {
 		t.Fatalf("Wrong number of hashes read, want %d, got %d", want, have)
 	}
-}
-
-// This measures the write speed of the WriteAncientBlocks operation.
-func BenchmarkWriteAncientBlocks(b *testing.B) {
-	// Open freezer database.
-	frdir := b.TempDir()
-	db, err := NewDatabaseWithFreezer(NewMemoryDatabase(), frdir, "", false, false, false, false)
-	if err != nil {
-		b.Fatalf("failed to create database with ancient backend")
-	}
-	defer db.Close()
-
-	// Create the data to insert. The blocks must have consecutive numbers, so we create
-	// all of them ahead of time. However, there is no need to create receipts
-	// individually for each block, just make one batch here and reuse it for all writes.
-	const batchSize = 128
-	const blockTxs = 20
-	allBlocks := makeTestBlocks(b.N, blockTxs)
-	batchReceipts := makeTestReceipts(batchSize, blockTxs)
-	b.ResetTimer()
-
-	// The benchmark loop writes batches of blocks, but note that the total block count is
-	// b.N. This means the resulting ns/op measurement is the time it takes to write a
-	// single block and its associated data.
-	var td = big.NewInt(55)
-	var totalSize int64
-	for i := 0; i < b.N; i += batchSize {
-		length := batchSize
-		if i+batchSize > b.N {
-			length = b.N - i
-		}
-
-		blocks := allBlocks[i : i+length]
-		receipts := batchReceipts[:length]
-		writeSize, err := WriteAncientBlocks(db, blocks, receipts, td)
-		if err != nil {
-			b.Fatal(err)
-		}
-		totalSize += writeSize
-	}
-
-	// Enable MB/s reporting.
-	b.SetBytes(totalSize / int64(b.N))
 }
 
 // makeTestBlocks creates fake blocks for the ancient write benchmark.
@@ -870,64 +763,4 @@ func BenchmarkDecodeRLPLogs(b *testing.B) {
 			}
 		}
 	})
-}
-
-func TestHeadersRLPStorage(t *testing.T) {
-	// Have N headers in the freezer
-	frdir := t.TempDir()
-
-	db, err := NewDatabaseWithFreezer(NewMemoryDatabase(), frdir, "", false, false, false, false)
-	if err != nil {
-		t.Fatalf("failed to create database with ancient backend")
-	}
-	defer db.Close()
-	// Create blocks
-	var chain []*types.Block
-	var pHash common.Hash
-	for i := 0; i < 100; i++ {
-		block := types.NewBlockWithHeader(&types.Header{
-			Number:      big.NewInt(int64(i)),
-			Extra:       []byte("test block"),
-			UncleHash:   types.EmptyUncleHash,
-			TxHash:      types.EmptyTxsHash,
-			ReceiptHash: types.EmptyReceiptsHash,
-			ParentHash:  pHash,
-		})
-		chain = append(chain, block)
-		pHash = block.Hash()
-	}
-	var receipts []types.Receipts = make([]types.Receipts, 100)
-	// Write first half to ancients
-	WriteAncientBlocks(db, chain[:50], receipts[:50], big.NewInt(100))
-	// Write second half to db
-	for i := 50; i < 100; i++ {
-		WriteCanonicalHash(db, chain[i].Hash(), chain[i].NumberU64())
-		WriteBlock(db, chain[i])
-	}
-	checkSequence := func(from, amount int) {
-		headersRlp := ReadHeaderRange(db, uint64(from), uint64(amount))
-		if have, want := len(headersRlp), amount; have != want {
-			t.Fatalf("have %d headers, want %d", have, want)
-		}
-		for i, headerRlp := range headersRlp {
-			var header types.Header
-			if err := rlp.DecodeBytes(headerRlp, &header); err != nil {
-				t.Fatal(err)
-			}
-			if have, want := header.Number.Uint64(), uint64(from-i); have != want {
-				t.Fatalf("wrong number, have %d want %d", have, want)
-			}
-		}
-	}
-	checkSequence(99, 20)  // Latest block and 19 parents
-	checkSequence(99, 50)  // Latest block -> all db blocks
-	checkSequence(99, 51)  // Latest block -> one from ancients
-	checkSequence(99, 52)  // Latest blocks -> two from ancients
-	checkSequence(50, 2)   // One from db, one from ancients
-	checkSequence(49, 1)   // One from ancients
-	checkSequence(49, 50)  // All ancient ones
-	checkSequence(99, 100) // All blocks
-	checkSequence(0, 1)    // Only genesis
-	checkSequence(1, 1)    // Only block 1
-	checkSequence(1, 2)    // Genesis + block 1
 }

@@ -2,10 +2,10 @@ package pika
 
 import (
 	"context"
-	"time"
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -30,9 +30,8 @@ func New(addr string) (ethdb.Database, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		DB:           0, // use default DB
-		PoolSize:     60,
-		MinIdleConns: 60,
-		MaxConnAge:   time.Second * 60,
+		PoolSize:     20,
+		MinIdleConns: 20,
 	})
 	return &Database{
 		ctx: context.Background(),
@@ -72,39 +71,39 @@ func (d *Database) Ancient(kind string, number uint64) ([]byte, error) {
 //     but will otherwise return as many items as fit into maxByteSize.
 //   - if maxBytes is not specified, 'count' items will be returned if they are present
 func (d *Database) AncientRange(kind string, start uint64, count uint64, maxBytes uint64) ([][]byte, error) {
-	panic("not implemented") // TODO: Implement
+	return nil, nil
 }
 
 // Ancients returns the ancient item numbers in the ancient store.
 func (d *Database) Ancients() (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // Tail returns the number of first stored item in the freezer.
 // This number can also be interpreted as the total deleted item numbers.
 func (d *Database) Tail() (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // AncientSize returns the ancient size of the specified category.
 func (d *Database) AncientSize(kind string) (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // ItemAmountInAncient returns the actual length of current ancientDB.
 func (d *Database) ItemAmountInAncient() (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // AncientOffSet returns the offset of current ancientDB.
 func (d *Database) AncientOffSet() uint64 {
-	panic("not implemented") // TODO: Implement
+	return 0
 }
 
 // ReadAncients runs the given read operation while ensuring that no writes take place
 // on the underlying freezer.
 func (d *Database) ReadAncients(fn func(ethdb.AncientReaderOp) error) (err error) {
-	panic("not implemented") // TODO: Implement
+	return nil
 }
 
 // Put inserts the given value into the key-value data store.
@@ -121,13 +120,13 @@ func (d *Database) Delete(key []byte) error {
 // If the function returns an error, any changes to the underlying store are reverted.
 // The integer return value is the total size of the written data.
 func (d *Database) ModifyAncients(_ func(ethdb.AncientWriteOp) error) (int64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // TruncateHead discards all but the first n ancient data from the ancient store.
 // After the truncation, the latest item can be accessed it item_n-1(start from 0).
 func (d *Database) TruncateHead(n uint64) (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // TruncateTail discards the first n ancient data from the ancient store. The already
@@ -136,7 +135,7 @@ func (d *Database) TruncateHead(n uint64) (uint64, error) {
 // immediately, but only when the accumulated deleted data reach the threshold then
 // will be removed all together.
 func (d *Database) TruncateTail(n uint64) (uint64, error) {
-	panic("not implemented") // TODO: Implement
+	return 0, nil
 }
 
 // Sync flushes all in-memory ancient store data to disk.
@@ -148,11 +147,11 @@ func (d *Database) Sync() error {
 // The second argument is a function that takes a raw entry and returns it
 // in the newest format.
 func (d *Database) MigrateTable(_ string, _ func([]byte) ([]byte, error)) error {
-	panic("not implemented") // TODO: Implement
+	return nil
 }
 
 func (d *Database) DiffStore() ethdb.KeyValueStore {
-	panic("not implemented") // TODO: Implement
+	return nil
 }
 
 func (d *Database) SetDiffStore(diff ethdb.KeyValueStore) {
@@ -221,6 +220,7 @@ func (d *Database) NewSnapshot() (ethdb.Snapshot, error) {
 }
 
 func (d *Database) Close() error {
+	log.Info("close database")
 	return d.db.Close()
 }
 

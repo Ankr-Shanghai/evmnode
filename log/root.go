@@ -11,7 +11,7 @@ var (
 )
 
 func init() {
-	root.SetHandler(DiscardHandler())
+	root.SetHandler(StdoutHandler)
 }
 
 // New returns a new logger with the given context.

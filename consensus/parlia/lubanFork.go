@@ -15,7 +15,6 @@ import (
 
 func (p *Parlia) getCurrentValidatorsBeforeLuban(blockHash common.Hash, blockNumber *big.Int) ([]common.Address, error) {
 	blockNr := rpc.BlockNumberOrHashWithHash(blockHash, false)
-
 	// prepare different method
 	method := "getValidators"
 	if p.chainConfig.IsEuler(blockNumber) {

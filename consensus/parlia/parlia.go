@@ -970,7 +970,6 @@ func (p *Parlia) verifyValidators(header *types.Header) error {
 	if header.Number.Uint64()%p.config.Epoch != 0 {
 		return nil
 	}
-
 	newValidators, voteAddressMap, err := p.getCurrentValidators(header.ParentHash, new(big.Int).Sub(header.Number, big.NewInt(1)))
 	if err != nil {
 		return err
@@ -1084,6 +1083,7 @@ func (p *Parlia) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 	if err != nil {
 		return err
 	}
+
 	nextForkHash := forkid.NewID(p.chainConfig, p.genesisHash, number, header.Time).Hash
 	if !snap.isMajorityFork(hex.EncodeToString(nextForkHash[:])) {
 		log.Debug("there is a possible fork, and your client is not the majority. Please check...", "nextForkHash", hex.EncodeToString(nextForkHash[:]))
@@ -1091,6 +1091,7 @@ func (p *Parlia) Finalize(chain consensus.ChainHeaderReader, header *types.Heade
 	// If the block is an epoch end block, verify the validator list
 	// The verification can only be done when the state is ready, it can't be done in VerifyHeader.
 	if err := p.verifyValidators(header); err != nil {
+		log.Error("verifyValidators failed", "error", err)
 		return err
 	}
 

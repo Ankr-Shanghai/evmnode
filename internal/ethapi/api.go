@@ -128,40 +128,6 @@ func (s *EthereumAPI) FeeHistory(ctx context.Context, blockCount math.HexOrDecim
 	return results, nil
 }
 
-// Syncing returns false in case the node is currently not syncing with the network. It can be up-to-date or has not
-// yet received the latest block headers from its pears. In case it is synchronizing:
-// - startingBlock: block number this node started to synchronize from
-// - currentBlock:  block number this node is currently importing
-// - highestBlock:  block number of the highest block header this node has received from peers
-// - pulledStates:  number of state entries processed until now
-// - knownStates:   number of known state entries that still need to be pulled
-func (s *EthereumAPI) Syncing() (interface{}, error) {
-	progress := s.b.SyncProgress()
-
-	// Return not syncing if the synchronisation already completed
-	if progress.CurrentBlock >= progress.HighestBlock {
-		return false, nil
-	}
-	// Otherwise gather the block sync stats
-	return map[string]interface{}{
-		"startingBlock":       hexutil.Uint64(progress.StartingBlock),
-		"currentBlock":        hexutil.Uint64(progress.CurrentBlock),
-		"highestBlock":        hexutil.Uint64(progress.HighestBlock),
-		"syncedAccounts":      hexutil.Uint64(progress.SyncedAccounts),
-		"syncedAccountBytes":  hexutil.Uint64(progress.SyncedAccountBytes),
-		"syncedBytecodes":     hexutil.Uint64(progress.SyncedBytecodes),
-		"syncedBytecodeBytes": hexutil.Uint64(progress.SyncedBytecodeBytes),
-		"syncedStorage":       hexutil.Uint64(progress.SyncedStorage),
-		"syncedStorageBytes":  hexutil.Uint64(progress.SyncedStorageBytes),
-		"healedTrienodes":     hexutil.Uint64(progress.HealedTrienodes),
-		"healedTrienodeBytes": hexutil.Uint64(progress.HealedTrienodeBytes),
-		"healedBytecodes":     hexutil.Uint64(progress.HealedBytecodes),
-		"healedBytecodeBytes": hexutil.Uint64(progress.HealedBytecodeBytes),
-		"healingTrienodes":    hexutil.Uint64(progress.HealingTrienodes),
-		"healingBytecode":     hexutil.Uint64(progress.HealingBytecode),
-	}, nil
-}
-
 // TxPoolAPI offers and API for the transaction pool. It only operates on data that is non-confidential.
 type TxPoolAPI struct {
 	b Backend
@@ -1115,6 +1081,7 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	if blockOverrides != nil {
 		blockOverrides.Apply(&blockCtx)
 	}
+
 	evm, vmError := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true}, &blockCtx)
 
 	// Wait for the context to be done and cancel the evm. Even if the
@@ -1143,7 +1110,6 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 
 func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
-
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
 		return nil, err
@@ -1189,7 +1155,9 @@ func (e *revertError) ErrorData() interface{} {
 // Note, this function doesn't make and changes in the state/blockchain and is
 // useful to execute and retrieve values.
 func (s *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides) (hexutil.Bytes, error) {
-	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, blockOverrides, s.b.RPCEVMTimeout(), s.b.RPCGasCap())
+	timeout := s.b.RPCEVMTimeout()
+	gascap := s.b.RPCGasCap()
+	result, err := DoCall(ctx, s.b, args, blockNrOrHash, overrides, blockOverrides, timeout, gascap)
 	if err != nil {
 		return nil, err
 	}

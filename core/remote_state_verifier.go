@@ -47,7 +47,6 @@ type remoteVerifyManager struct {
 	bc            *BlockChain
 	taskLock      sync.RWMutex
 	tasks         map[common.Hash]*verifyTask
-	peers         verifyPeers
 	verifiedCache *lru.Cache
 	allowInsecure bool
 
@@ -60,7 +59,7 @@ type remoteVerifyManager struct {
 	messageCh chan verifyMessage
 }
 
-func NewVerifyManager(blockchain *BlockChain, peers verifyPeers, allowInsecure bool) (*remoteVerifyManager, error) {
+func NewVerifyManager(blockchain *BlockChain, allowInsecure bool) (*remoteVerifyManager, error) {
 	verifiedCache, _ := lru.New(verifiedCacheSize)
 	block := blockchain.CurrentBlock()
 	if block == nil {
@@ -90,7 +89,6 @@ func NewVerifyManager(blockchain *BlockChain, peers verifyPeers, allowInsecure b
 	vm := &remoteVerifyManager{
 		bc:            blockchain,
 		tasks:         make(map[common.Hash]*verifyTask),
-		peers:         peers,
 		verifiedCache: verifiedCache,
 		allowInsecure: allowInsecure,
 
@@ -192,7 +190,7 @@ func (vm *remoteVerifyManager) NewBlockVerifyTask(header *types.Header) {
 				log.Error("failed to get diff hash", "block", hash, "number", header.Number, "error", err)
 				return
 			}
-			verifyTask := NewVerifyTask(diffHash, header, vm.peers, vm.verifyCh, vm.allowInsecure)
+			verifyTask := NewVerifyTask(diffHash, header, vm.verifyCh, vm.allowInsecure)
 			vm.taskLock.Lock()
 			vm.tasks[hash] = verifyTask
 			vm.taskLock.Unlock()
@@ -263,26 +261,24 @@ type verifyMessage struct {
 }
 
 type verifyTask struct {
-	diffhash       common.Hash
-	blockHeader    *types.Header
-	candidatePeers verifyPeers
-	badPeers       map[string]struct{}
-	startAt        time.Time
-	allowInsecure  bool
+	diffhash      common.Hash
+	blockHeader   *types.Header
+	badPeers      map[string]struct{}
+	startAt       time.Time
+	allowInsecure bool
 
 	messageCh  chan verifyMessage
 	terminalCh chan struct{}
 }
 
-func NewVerifyTask(diffhash common.Hash, header *types.Header, peers verifyPeers, verifyCh chan common.Hash, allowInsecure bool) *verifyTask {
+func NewVerifyTask(diffhash common.Hash, header *types.Header, verifyCh chan common.Hash, allowInsecure bool) *verifyTask {
 	vt := &verifyTask{
-		diffhash:       diffhash,
-		blockHeader:    header,
-		candidatePeers: peers,
-		badPeers:       make(map[string]struct{}),
-		allowInsecure:  allowInsecure,
-		messageCh:      make(chan verifyMessage),
-		terminalCh:     make(chan struct{}),
+		diffhash:      diffhash,
+		blockHeader:   header,
+		badPeers:      make(map[string]struct{}),
+		allowInsecure: allowInsecure,
+		messageCh:     make(chan verifyMessage),
+		terminalCh:    make(chan struct{}),
 	}
 	go vt.Start(verifyCh)
 	return vt
@@ -338,12 +334,6 @@ func (vt *verifyTask) Start(verifyCh chan common.Hash) {
 // when n<0, send to all the peers exclude badPeers.
 func (vt *verifyTask) sendVerifyRequest(n int) {
 	var validPeers []VerifyPeer
-	candidatePeers := vt.candidatePeers.GetVerifyPeers()
-	for _, p := range candidatePeers {
-		if _, ok := vt.badPeers[p.ID()]; !ok {
-			validPeers = append(validPeers, p)
-		}
-	}
 	// if has not valid peer, log warning.
 	if len(validPeers) == 0 {
 		log.Warn("there is no valid peer for block", "number", vt.blockHeader.Number)
