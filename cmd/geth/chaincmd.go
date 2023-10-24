@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/ethereum/go-ethereum/geth/utils"
+	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/urfave/cli/v2"
 )
 

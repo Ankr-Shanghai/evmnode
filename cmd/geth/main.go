@@ -17,6 +17,7 @@ func init() {
 	app.Commands = []*cli.Command{
 		initCmd,
 		startCmd,
+		versionCommand,
 	}
 	sort.Sort(cli.CommandsByName(app.Commands))
 }

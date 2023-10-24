@@ -4,9 +4,9 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/geth/utils"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -40,7 +40,7 @@ func start(ctx *cli.Context) error {
 
 		var begin = header.Number.Int64()
 
-		for i := begin; i < begin+20000; i++ {
+		for i := begin + 1; i < begin+40000; i++ {
 			block, err := client.BlockByNumber(c, big.NewInt(i))
 			if err != nil {
 				log.Error("client.BlockByNumber", "err", err)
@@ -51,9 +51,6 @@ func start(ctx *cli.Context) error {
 				log.Error("blockchain.InsertChain", "err", err)
 				return err
 			}
-
-			log.Info("blockchain.InsertChain", "number", i, "txes", len(block.Transactions()))
-
 		}
 
 		return nil
@@ -68,7 +65,7 @@ func start(ctx *cli.Context) error {
 
 		dataRouter := svc.Group("v1")
 		dataRouter.Use(recover.New())
-		setRouter(dataRouter)
+		setRouter(dataRouter, ethereum.APIBackend)
 
 		addr := ctx.String(utils.SvcHost.Name) + ":" + ctx.String(utils.SvcPort.Name)
 		log.Info("evm service boot", "entrypoint", addr)

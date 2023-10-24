@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/ethdb/pika"
-	"github.com/ethereum/go-ethereum/geth/utils"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
