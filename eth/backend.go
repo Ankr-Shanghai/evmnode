@@ -96,6 +96,7 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 		config:            config,
 		merger:            consensus.NewMerger(chainDb),
 		chainDb:           chainDb,
+		accountManager:    accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}),
 		closeBloomHandler: make(chan struct{}),
 		networkID:         56,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
