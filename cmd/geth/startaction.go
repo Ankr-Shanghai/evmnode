@@ -2,11 +2,8 @@ package main
 
 import (
 	"context"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -31,27 +28,27 @@ func start(ctx *cli.Context) error {
 
 		log.Info("blockchain.CurrentHeader", "number", header.Number.String())
 
-		rpcurl := "https://rpc.ankr.com/bsc"
-		client, err := ethclient.Dial(rpcurl)
-		if err != nil {
-			log.Error("ethclient.Dial", "err", err)
-			return err
-		}
+		// rpcurl := "https://rpc.ankr.com/bsc"
+		// client, err := ethclient.Dial(rpcurl)
+		// if err != nil {
+		// 	log.Error("ethclient.Dial", "err", err)
+		// 	return err
+		// }
 
-		var begin = header.Number.Int64()
+		// var begin = header.Number.Int64()
 
-		for i := begin + 1; i < begin+40000; i++ {
-			block, err := client.BlockByNumber(c, big.NewInt(i))
-			if err != nil {
-				log.Error("client.BlockByNumber", "err", err)
-				return err
-			}
-			_, err = ethereum.BlockChain().InsertChain([]*types.Block{block})
-			if err != nil {
-				log.Error("blockchain.InsertChain", "err", err)
-				return err
-			}
-		}
+		// for i := begin + 1; i < begin+40000; i++ {
+		// 	block, err := client.BlockByNumber(c, big.NewInt(i))
+		// 	if err != nil {
+		// 		log.Error("client.BlockByNumber", "err", err)
+		// 		return err
+		// 	}
+		// 	_, err = ethereum.BlockChain().InsertChain([]*types.Block{block})
+		// 	if err != nil {
+		// 		log.Error("blockchain.InsertChain", "err", err)
+		// 		return err
+		// 	}
+		// }
 
 		return nil
 	})

@@ -15,10 +15,12 @@ func setRouter(router fiber.Router, ethAPI *eth.EthAPIBackend) {
 	router.Post("/block", blockHandler)
 
 	api := &public.RpcAPI{
-		Ctx:    context.Background(),
-		BcAPI:  ethapi.NewBlockChainAPI(ethAPI),
-		EthAPI: ethapi.NewEthereumAPI(ethAPI),
-		TxAPI:  ethapi.NewTransactionAPI(ethAPI, new(ethapi.AddrLocker)),
+		Ctx:     context.Background(),
+		BcAPI:   ethapi.NewBlockChainAPI(ethAPI),
+		EthAPI:  ethapi.NewEthereumAPI(ethAPI),
+		TxAPI:   ethapi.NewTransactionAPI(ethAPI, new(ethapi.AddrLocker)),
+		ChainDb: ethAPI.ChainDb(),
+		Chain:   ethAPI.Chain(),
 	}
 	router.Post("/rpc", func(ctx *fiber.Ctx) error {
 		return public.RpcHandler(ctx, api)

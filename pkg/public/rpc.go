@@ -3,16 +3,20 @@ package public
 import (
 	"context"
 
+	"github.com/ethereum/go-ethereum/core"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/gofiber/fiber/v2"
 )
 
 type RpcAPI struct {
-	Ctx    context.Context
-	BcAPI  *ethapi.BlockChainAPI
-	EthAPI *ethapi.EthereumAPI
-	TxAPI  *ethapi.TransactionAPI
+	Ctx     context.Context
+	BcAPI   *ethapi.BlockChainAPI
+	EthAPI  *ethapi.EthereumAPI
+	TxAPI   *ethapi.TransactionAPI
+	ChainDb ethdb.Database
+	Chain   *core.BlockChain
 }
 
 type ReqJson struct {
