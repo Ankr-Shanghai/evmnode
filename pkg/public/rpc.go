@@ -79,6 +79,8 @@ var (
 		"eth_sign":                             Sign,
 		"eth_signTransaction":                  SignTransaction,
 		"eth_sendTransaction":                  SendTransaction,
+		"eth_sendRawTransaction":               SendRawTransaction,
+		"eth_call":                             Call,
 		"eth_getBlockByNumber":                 GetBlockByNumber,
 	}
 )

@@ -602,8 +602,12 @@ func (api *BlockChainAPI) ChainId() *hexutil.Big {
 
 // BlockNumber returns the block number of the chain head.
 func (s *BlockChainAPI) BlockNumber() hexutil.Uint64 {
-	header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
-	return hexutil.Uint64(header.Number.Uint64())
+	// for compatible one storage multiple service node case
+	// header, _ := s.b.HeaderByNumber(context.Background(), rpc.LatestBlockNumber) // latest header should always be available
+	// return hexutil.Uint64(header.Number.Uint64())
+	head := rawdb.ReadHeadBlockHash(s.b.ChainDb())
+	headBlock := s.b.Chain().GetBlockByHash(head)
+	return hexutil.Uint64(headBlock.NumberU64())
 }
 
 // GetBalance returns the amount of wei for the given address in the state of the
