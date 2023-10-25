@@ -10,11 +10,7 @@ var (
 		Name:      "init",
 		Usage:     "initialize genesis block",
 		ArgsUsage: "<genesis path>",
-		Flags: []cli.Flag{
-			utils.DbHost,
-			utils.DbPort,
-		},
-		Action: initGenesis,
+		Action:    initGenesis,
 		Description: `
        The init command initializes a new genesis block and definition for the network.
        This is a destructive action and changes the network in which you will be
@@ -27,9 +23,17 @@ var (
 		Flags: []cli.Flag{
 			utils.SvcHost,
 			utils.SvcPort,
-			utils.DbHost,
-			utils.DbPort,
 		},
 		Action: start,
+	}
+
+	importCmd = &cli.Command{
+		Name:   "import",
+		Usage:  "import missing blocks",
+		Action: restore,
+		Flags: []cli.Flag{
+			utils.Engine,
+			utils.SnapPath,
+		},
 	}
 )

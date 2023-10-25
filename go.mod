@@ -61,7 +61,7 @@ require (
 	github.com/tendermint/tendermint v0.31.15
 	github.com/tidwall/wal v1.1.7
 	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/urfave/cli/v2 v2.24.1
+	github.com/urfave/cli/v2 v2.25.7
 	github.com/willf/bitset v1.1.3
 	golang.org/x/crypto v0.9.0
 	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad
@@ -75,7 +75,7 @@ require (
 	contrib.go.opencensus.io/exporter/jaeger v0.2.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v0.8.3 // indirect
-	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/aristanetworks/goarista v0.0.0-20200805130819-fd197cf57d96 // indirect

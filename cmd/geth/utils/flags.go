@@ -14,6 +14,12 @@ import (
 )
 
 var (
+	Backend = &cli.StringFlag{
+		Name:    "backend",
+		Aliases: []string{"b"},
+		Value:   "https://bsc-dataseed.binance.org/",
+		Usage:   "Backend for get new blocks",
+	}
 	DbHost = &cli.StringFlag{
 		Name:  "db-host",
 		Value: "127.0.0.1",
@@ -43,6 +49,17 @@ var (
 		Name:  "svc-port",
 		Value: 8080,
 		Usage: "Service port",
+	}
+
+	Engine = &cli.StringFlag{
+		Name:  "engine",
+		Value: "pebble",
+		Usage: "Engine for leveldb/pebble",
+	}
+	SnapPath = &cli.StringFlag{
+		Name:  "snap",
+		Value: "/tmp/snap",
+		Usage: "Snapshot path",
 	}
 )
 
