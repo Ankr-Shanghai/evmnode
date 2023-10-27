@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/pkg/source"
@@ -51,6 +52,7 @@ func start(ctx *cli.Context) error {
 			if err != nil {
 				log.Error("import", "take remote block", err)
 				time.Sleep(time.Millisecond * 100)
+				source.InitBackendClient(ctx)
 				goto DoGgain
 			}
 			ethereum.BlockChain().InsertChain([]*types.Block{block})
@@ -85,6 +87,7 @@ func start(ctx *cli.Context) error {
 		srv := rpc.NewServer()
 
 		apis := ethapi.GetAPIs(ethereum.APIBackend)
+		apis = append(apis, tracers.APIs(ethereum.APIBackend)...)
 
 		for _, api := range apis {
 			if err := srv.RegisterName(api.Namespace, api.Service); err != nil {

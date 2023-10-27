@@ -17,6 +17,7 @@ var (
        participating.
        It expects the genesis file as argument.`,
 	}
+
 	startCmd = &cli.Command{
 		Name:  "start",
 		Usage: "boot main service",
@@ -34,6 +35,16 @@ var (
 		Flags: []cli.Flag{
 			utils.Engine,
 			utils.SnapPath,
+		},
+	}
+
+	rpccmd = &cli.Command{
+		Name:   "rpc",
+		Usage:  "boot rpc service",
+		Action: rpcstart,
+		Flags: []cli.Flag{
+			utils.SvcHost,
+			utils.SvcPort,
 		},
 	}
 )

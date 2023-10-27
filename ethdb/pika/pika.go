@@ -30,8 +30,8 @@ func New(addr string) (ethdb.Database, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:         addr,
 		DB:           0, // use default DB
-		PoolSize:     20,
-		MinIdleConns: 20,
+		PoolSize:     1,
+		MinIdleConns: 1,
 	})
 	return &Database{
 		ctx: context.Background(),

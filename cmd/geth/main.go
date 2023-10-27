@@ -19,6 +19,7 @@ func init() {
 		initCmd,
 		startCmd,
 		importCmd,
+		rpccmd,
 		versionCommand,
 	}
 	app.Flags = []cli.Flag{
