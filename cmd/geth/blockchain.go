@@ -2,9 +2,12 @@ package main
 
 import (
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
+	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
@@ -28,6 +31,7 @@ func newBlockChain(ctx *cli.Context) {
 
 	cfg := &ethconfig.Defaults
 	cfg.NoPruning = true
+	cfg.TriesVerifyMode = core.FullVerify
 
 	ethereum = eth.NewEthereum(db, cfg)
 

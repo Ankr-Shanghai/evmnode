@@ -27,6 +27,7 @@ func init() {
 		utils.DbHost,
 		utils.DbPort,
 	}
+	// app.Flags = append(app.Flags, debug.Flags...)
 
 	sort.Sort(cli.CommandsByName(app.Commands))
 
