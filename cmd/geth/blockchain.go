@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -8,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
+	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
@@ -19,18 +22,10 @@ var (
 
 func newBlockChain(ctx *cli.Context) {
 
-	option := rawdb.OpenOptions{
-		Type:             "chainkv",
-		Host:             ctx.String(utils.DbHost.Name),
-		Port:             ctx.String(utils.DbPort.Name),
-		DisableFreeze:    true,
-		PruneAncientData: false,
-		ReadOnly:         false,
-	}
-
-	chaindb, err := rawdb.Open(option)
+	chaindb, err := OpenDatabase(ctx)
 	if err != nil {
 		log.Error("open chaindb failed", "err", err)
+		return
 	}
 
 	cfg := &ethconfig.Defaults
@@ -38,6 +33,43 @@ func newBlockChain(ctx *cli.Context) {
 	cfg.TriesVerifyMode = core.FullVerify
 
 	ethereum = eth.NewEthereum(chaindb, cfg)
+	ethereum.Start()
 
 	log.Info("create blockchain success")
+}
+
+func OpenDatabase(ctx *cli.Context) (ethdb.Database, error) {
+
+	var option = rawdb.OpenOptions{
+		DisableFreeze:    true,
+		PruneAncientData: false,
+		ReadOnly:         false,
+	}
+
+	switch ctx.String(utils.Engine.Name) {
+	case "chainkv":
+		option.Type = "chainkv"
+		option.Host = ctx.String(utils.DbHost.Name)
+		option.Port = ctx.String(utils.DbPort.Name)
+		option.Size = ctx.Int(utils.DbSize.Name)
+	case "pebble":
+		option.Type = "pebble"
+		option.Directory = ctx.String(utils.DataDir.Name)
+		option.AncientsDirectory = fmt.Sprintf("%s/ancients", ctx.String(utils.DataDir.Name))
+		option.Cache = 1024 // 1G
+		option.Handles = 256
+	case "leveldb":
+		option.Type = "leveldb"
+		option.Directory = ctx.String(utils.DataDir.Name)
+		option.AncientsDirectory = fmt.Sprintf("%s/ancients", ctx.String(utils.DataDir.Name))
+		option.Cache = 1024 // 1G
+		option.Handles = 256
+	}
+
+	chaindb, err := rawdb.Open(option)
+	if err != nil {
+		log.Error("open chaindb failed", "err", err)
+		return nil, err
+	}
+	return chaindb, nil
 }

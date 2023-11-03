@@ -91,16 +91,16 @@ type Ethereum struct {
 }
 
 func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
-	config.NetworkId = 56
 	eth := &Ethereum{
 		config:            config,
 		merger:            consensus.NewMerger(chainDb),
 		chainDb:           chainDb,
 		accountManager:    accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}),
 		closeBloomHandler: make(chan struct{}),
-		networkID:         56,
+		networkID:         config.NetworkId,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
+		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
 	}
 
 	eth.APIBackend = &EthAPIBackend{false, false, eth, nil}
@@ -130,19 +130,42 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 	}
 	vmConfig := vm.Config{EnablePreimageRecording: false}
 	var (
-		overrides core.ChainOverrides
-		history   uint64 = 64
+		overrides   core.ChainOverrides
+		history     uint64 = 64
+		cacheConfig        = &core.CacheConfig{
+			TrieCleanLimit:      config.TrieCleanCache,
+			TrieCleanNoPrefetch: config.NoPrefetch,
+			TrieDirtyLimit:      config.TrieDirtyCache,
+			TrieDirtyDisabled:   config.NoPruning,
+			TrieTimeLimit:       config.TrieTimeout,
+			NoTries:             config.TriesVerifyMode != core.LocalVerify,
+			SnapshotLimit:       config.SnapshotCache,
+			TriesInMemory:       config.TriesInMemory,
+			Preimages:           config.Preimages,
+			StateHistory:        config.StateHistory,
+			StateScheme:         config.StateScheme,
+		}
 	)
 
-	blockchain, err := core.NewBlockChain(chainDb, nil, genesis, &overrides,
+	if config.OverrideCancun != nil {
+		overrides.OverrideCancun = config.OverrideCancun
+	}
+	if config.OverrideVerkle != nil {
+		overrides.OverrideVerkle = config.OverrideVerkle
+	}
+
+	blockchain, err := core.NewBlockChain(chainDb, cacheConfig, genesis, &overrides,
 		engine, vmConfig, shouldPreserveBlock, &history)
 	if err != nil {
 		log.Error("create blockchain", "err", err)
 		return nil
 	}
-
 	eth.blockchain = blockchain
 	eth.engine = engine
+
+	eth.bloomIndexer.Start(eth.blockchain)
+	// Successful startup; push a marker and check previous unclean shutdowns.
+	eth.shutdownTracker.MarkStartup()
 
 	return eth
 }
@@ -483,7 +506,7 @@ func (s *Ethereum) Stop() error {
 	s.engine.Close()
 
 	// Clean shutdown marker as the last thing before closing db
-	// s.shutdownTracker.Stop()
+	s.shutdownTracker.Stop()
 
 	s.chainDb.Close()
 	// s.eventMux.Stop()

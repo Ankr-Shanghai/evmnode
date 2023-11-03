@@ -10,8 +10,8 @@ func NewPikaDatabase(addr string) (ethdb.Database, error) {
 	return pika.New(addr)
 }
 
-func NewChainKVDatabase(host, port string) (ethdb.Database, error) {
-	kvdb, err := chainkv.NewChainKV(host, port)
+func NewChainKVDatabase(host, port string, size int) (ethdb.Database, error) {
+	kvdb, err := chainkv.NewChainKV(host, port, size)
 	if err != nil {
 		return nil, err
 	}

@@ -11,11 +11,11 @@ type Database struct {
 	log    log.Logger
 }
 
-func NewChainKV(host, port string) (*Database, error) {
+func NewChainKV(host, port string, size int) (*Database, error) {
 	opt := &client.Option{
 		Host: host,
 		Port: port,
-		Size: 5,
+		Size: size,
 	}
 	client, err := client.NewClient(opt)
 	if err != nil {

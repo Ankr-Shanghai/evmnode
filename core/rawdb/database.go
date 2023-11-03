@@ -461,8 +461,9 @@ type OpenOptions struct {
 	DisableFreeze    bool
 	IsLastOffset     bool
 	PruneAncientData bool
-	Host             string // for pika
-	Port             string // for pika
+	Host             string // for chainkv
+	Port             string // for chainkv
+	Size             int    // for chainkv
 }
 
 // openKeyValueDatabase opens a disk-based key-value database, e.g. leveldb or pebble.
@@ -479,7 +480,7 @@ func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 	// support to remote storage engine called pika
 	if o.Type == dbChainkv && len(o.Port) != 0 {
 		log.Info("Using pika as the backing database")
-		return NewChainKVDatabase(o.Host, o.Port)
+		return NewChainKVDatabase(o.Host, o.Port, o.Size)
 	}
 
 	// Retrieve any pre-existing database's type and use that or the requested one

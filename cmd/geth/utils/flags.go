@@ -32,6 +32,12 @@ var (
 		Usage: "Database port",
 	}
 
+	DbSize = &cli.IntFlag{
+		Name:  "db-pool-size",
+		Value: 10,
+		Usage: "database connection pool size",
+	}
+
 	StateSchemeFlag = &cli.StringFlag{
 		Name:     "state.scheme",
 		Usage:    "Scheme to use for storing ethereum state ('hash' or 'path')",
@@ -54,12 +60,19 @@ var (
 	Engine = &cli.StringFlag{
 		Name:  "engine",
 		Value: "pebble",
-		Usage: "Engine for leveldb/pebble",
+		Usage: "Engine for leveldb/pebble/chainkv",
 	}
+
+	DataDir = &cli.StringFlag{
+		Name:  "datadir",
+		Value: "/tmp/node",
+		Usage: "database path",
+	}
+
 	SnapPath = &cli.StringFlag{
 		Name:  "snap",
 		Value: "/tmp/snap",
-		Usage: "Snapshot path",
+		Usage: "snapshot path",
 	}
 )
 

@@ -26,6 +26,8 @@ func init() {
 		utils.Backend,
 		utils.DbHost,
 		utils.DbPort,
+		utils.Engine,
+		utils.DataDir,
 	}
 	// app.Flags = append(app.Flags, debug.Flags...)
 

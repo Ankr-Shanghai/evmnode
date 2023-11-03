@@ -318,6 +318,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	// Setup the genesis block, commit the provided genesis specification
 	// to database if the genesis block is not present yet, or load the
 	// stored one from database.
+
 	chainConfig, genesisHash, genesisErr := SetupGenesisBlockWithOverride(db, triedb, genesis, overrides)
 	if _, ok := genesisErr.(*params.ConfigCompatError); genesisErr != nil && !ok {
 		return nil, genesisErr
@@ -347,6 +348,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 		diffQueue:          prque.New[int64, *types.DiffLayer](nil),
 		diffQueueBuffer:    make(chan *types.DiffLayer),
 	}
+
 	bc.flushInterval.Store(int64(cacheConfig.TrieTimeLimit))
 	bc.forker = NewForkChoice(bc, shouldPreserve)
 	bc.stateCache = state.NewDatabaseWithNodeDB(bc.db, bc.triedb)
@@ -359,6 +361,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	if err != nil {
 		return nil, err
 	}
+
 	bc.genesisBlock = bc.GetBlockByNumber(0)
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
@@ -604,6 +607,16 @@ func (bc *BlockChain) empty() bool {
 	return true
 }
 
+func getAllHeadHash(db ethdb.Database) {
+	hash := rawdb.ReadHeadBlockHash(db)
+	fmt.Printf("head block hash:%v\n", hash)
+	hash = rawdb.ReadHeadHeaderHash(db)
+	fmt.Printf("head header hash:%v\n", hash)
+	hash = rawdb.ReadHeadFastBlockHash(db)
+	fmt.Printf("fast block hash:%v\n", hash)
+
+}
+
 // GetJustifiedNumber returns the highest justified blockNumber on the branch including and before `header`.
 func (bc *BlockChain) GetJustifiedNumber(header *types.Header) uint64 {
 	if p, ok := bc.engine.(consensus.PoSA); ok {
@@ -631,7 +644,6 @@ func (bc *BlockChain) getFinalizedNumber(header *types.Header) uint64 {
 // loadLastState loads the last known chain state from the database. This method
 // assumes that the chain manager mutex is held.
 func (bc *BlockChain) loadLastState() error {
-	fmt.Printf("loadLastState \n")
 
 	// Restore the last known head block
 	head := rawdb.ReadHeadBlockHash(bc.db)
@@ -640,8 +652,6 @@ func (bc *BlockChain) loadLastState() error {
 		log.Warn("Empty database, resetting chain")
 		return bc.Reset()
 	}
-
-	fmt.Printf("loadLastState head:%+v\n", head)
 
 	// Make sure the entire head block is available
 	headBlock := bc.GetBlockByHash(head)

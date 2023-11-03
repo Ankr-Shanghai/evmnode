@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.3
 
 require (
-	github.com/Ankr-Shanghai/chainkv v0.0.0-20231102122545-211946177f98
+	github.com/Ankr-Shanghai/chainkv v0.0.0-20231103034722-c6b7238de3ea
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/VictoriaMetrics/fastcache v1.12.0
 	github.com/bnb-chain/ics23 v0.1.0
@@ -30,7 +30,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.50.0
 	github.com/gofrs/flock v0.8.1
 	github.com/golang-jwt/jwt/v4 v4.3.0
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb
 	github.com/google/gofuzz v1.2.0
 	github.com/google/pprof v0.0.0-20230207041349-798e818bf904
@@ -66,11 +66,11 @@ require (
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/urfave/cli/v2 v2.25.7
 	github.com/willf/bitset v1.1.3
-	golang.org/x/crypto v0.9.0
-	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad
+	golang.org/x/crypto v0.14.0
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sys v0.13.0
-	golang.org/x/text v0.9.0
-	golang.org/x/tools v0.9.1
+	golang.org/x/text v0.13.0
+	golang.org/x/tools v0.13.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -191,11 +191,11 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
-	golang.org/x/mod v0.11.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/mod v0.12.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/term v0.8.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/api v0.34.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect

@@ -138,6 +138,7 @@ func NewDatabase(diskdb ethdb.Database, config *Config) *Database {
 	 * 2. Second, initialize the db according to the scheme already used by db
 	 * 3. Last, use the default scheme, namely hash scheme
 	 */
+
 	if config.HashDB != nil {
 		if rawdb.ReadStateScheme(diskdb) == rawdb.PathScheme {
 			log.Warn("incompatible state scheme", "old", rawdb.PathScheme, "new", rawdb.HashScheme)

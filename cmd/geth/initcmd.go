@@ -6,8 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb/chainkv"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
@@ -31,11 +29,10 @@ func initGenesis(ctx *cli.Context) error {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
 
-	cb, err := chainkv.NewChainKV(ctx.String(utils.DbHost.Name), ctx.String(utils.DbPort.Name))
+	chaindb, err := OpenDatabase(ctx)
 	if err != nil {
-		utils.Fatalf("Failed to open database: %v", err)
+		utils.Fatalf("open chaindb failed: %v", err)
 	}
-	chaindb := rawdb.NewDatabase(cb)
 	defer chaindb.Close()
 
 	triedb := utils.MakeTrieDatabase(ctx, chaindb, false, false)
