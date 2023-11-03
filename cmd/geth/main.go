@@ -26,6 +26,7 @@ func init() {
 		utils.Backend,
 		utils.DbHost,
 		utils.DbPort,
+		utils.DbSize,
 		utils.Engine,
 		utils.DataDir,
 	}

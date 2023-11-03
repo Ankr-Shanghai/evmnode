@@ -479,7 +479,7 @@ func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 	}
 	// support to remote storage engine called pika
 	if o.Type == dbChainkv && len(o.Port) != 0 {
-		log.Info("Using pika as the backing database")
+		log.Info("Using chainkv as the backing database")
 		return NewChainKVDatabase(o.Host, o.Port, o.Size)
 	}
 
