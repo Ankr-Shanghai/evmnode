@@ -428,7 +428,7 @@ func NewLevelDBDatabaseWithFreezer(file string, cache int, handles int, ancient 
 const (
 	dbPebble  = "pebble"
 	dbLeveldb = "leveldb"
-	dbPikadb  = "pika"
+	dbChainkv = "chainkv"
 )
 
 // hasPreexistingDb checks the given data directory whether a database is already
@@ -461,7 +461,8 @@ type OpenOptions struct {
 	DisableFreeze    bool
 	IsLastOffset     bool
 	PruneAncientData bool
-	Remote           string // for pika
+	Host             string // for pika
+	Port             string // for pika
 }
 
 // openKeyValueDatabase opens a disk-based key-value database, e.g. leveldb or pebble.
@@ -472,13 +473,13 @@ type OpenOptions struct {
 //	db is existent     |  from db         |  specified type (if compatible)
 func openKeyValueDatabase(o OpenOptions) (ethdb.Database, error) {
 	// Reject any unsupported database type
-	if len(o.Type) != 0 && o.Type != dbLeveldb && o.Type != dbPebble && o.Type != dbPikadb {
+	if len(o.Type) != 0 && o.Type != dbLeveldb && o.Type != dbPebble && o.Type != dbChainkv {
 		return nil, fmt.Errorf("unknown db.engine %v", o.Type)
 	}
 	// support to remote storage engine called pika
-	if o.Type == dbPikadb && len(o.Remote) != 0 {
+	if o.Type == dbChainkv && len(o.Port) != 0 {
 		log.Info("Using pika as the backing database")
-		return NewPikaDatabase(o.Remote)
+		return NewChainKVDatabase(o.Host, o.Port)
 	}
 
 	// Retrieve any pre-existing database's type and use that or the requested one

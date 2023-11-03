@@ -5,7 +5,6 @@ import (
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -220,7 +219,6 @@ func (d *Database) NewSnapshot() (ethdb.Snapshot, error) {
 }
 
 func (d *Database) Close() error {
-	log.Info("close database")
 	return d.db.Close()
 }
 

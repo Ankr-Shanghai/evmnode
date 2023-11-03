@@ -234,7 +234,8 @@ type Config struct {
 
 	DBEngine string `toml:",omitempty"`
 
-	DBRemote string `toml:",omitempty"`
+	DBHost string `toml:",omitempty"`
+	DBPort string `toml:",omitempty"`
 }
 
 // IPCEndpoint resolves an IPC endpoint based on a configured value, taking into

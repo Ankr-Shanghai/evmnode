@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/ethdb/chainkv"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 )
@@ -30,16 +31,11 @@ func initGenesis(ctx *cli.Context) error {
 		utils.Fatalf("invalid genesis file: %v", err)
 	}
 
-	// addr := ctx.String(utils.DbHost.Name) + ":" + ctx.String(utils.DbPort.Name)
-	// chaindb, err := pika.New(addr)
-	// if err != nil {
-	// 	utils.Fatalf("Failed to open database: %v", err)
-	// }
-	// defer chaindb.Close()
-	chaindb, err := rawdb.NewPebbleDBDatabase("data", 1024, 128, "", false)
+	cb, err := chainkv.NewChainKV(ctx.String(utils.DbHost.Name), ctx.String(utils.DbPort.Name))
 	if err != nil {
 		utils.Fatalf("Failed to open database: %v", err)
 	}
+	chaindb := rawdb.NewDatabase(cb)
 	defer chaindb.Close()
 
 	triedb := utils.MakeTrieDatabase(ctx, chaindb, false, false)
@@ -49,6 +45,6 @@ func initGenesis(ctx *cli.Context) error {
 	if err != nil {
 		utils.Fatalf("Failed to write genesis block: %v", err)
 	}
-	log.Info("Successfully wrote genesis state", "database", "pika", "hash", hash)
+	log.Info("Successfully wrote genesis state", "database", "chainkv", "hash", hash)
 	return nil
 }

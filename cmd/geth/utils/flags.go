@@ -26,9 +26,9 @@ var (
 		Usage: "Database host",
 	}
 
-	DbPort = &cli.IntFlag{
+	DbPort = &cli.StringFlag{
 		Name:  "db-port",
-		Value: 9221,
+		Value: "4321",
 		Usage: "Database port",
 	}
 

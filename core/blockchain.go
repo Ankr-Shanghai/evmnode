@@ -631,6 +631,8 @@ func (bc *BlockChain) getFinalizedNumber(header *types.Header) uint64 {
 // loadLastState loads the last known chain state from the database. This method
 // assumes that the chain manager mutex is held.
 func (bc *BlockChain) loadLastState() error {
+	fmt.Printf("loadLastState \n")
+
 	// Restore the last known head block
 	head := rawdb.ReadHeadBlockHash(bc.db)
 	if head == (common.Hash{}) {
@@ -638,6 +640,9 @@ func (bc *BlockChain) loadLastState() error {
 		log.Warn("Empty database, resetting chain")
 		return bc.Reset()
 	}
+
+	fmt.Printf("loadLastState head:%+v\n", head)
+
 	// Make sure the entire head block is available
 	headBlock := bc.GetBlockByHash(head)
 	if headBlock == nil {
@@ -1458,6 +1463,10 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 		rawdb.WriteBlock(blockBatch, block)
 		rawdb.WriteReceipts(blockBatch, block.Hash(), block.NumberU64(), receipts)
 		rawdb.WritePreimages(blockBatch, state.Preimages())
+		// btw add write body
+		rawdb.WriteBody(blockBatch, block.Hash(), block.NumberU64(), block.Body())
+		rawdb.WriteTxLookupEntriesByBlock(blockBatch, block)
+
 		if err := blockBatch.Write(); err != nil {
 			log.Crit("Failed to write block into disk", "err", err)
 		}

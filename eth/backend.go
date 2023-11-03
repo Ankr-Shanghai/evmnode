@@ -148,7 +148,7 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 }
 
 func shouldPreserveBlock(header *types.Header) bool {
-	return false
+	return true
 }
 
 // New creates a new Ethereum object (including the

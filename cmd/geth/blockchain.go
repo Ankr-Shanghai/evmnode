@@ -18,22 +18,26 @@ var (
 )
 
 func newBlockChain(ctx *cli.Context) {
-	// addr := ctx.String(utils.DbHost.Name) + ":" + ctx.String(utils.DbPort.Name)
-	// db, err := pika.New(addr)
-	// if err != nil {
-	// 	utils.Fatalf("Failed to open database: %v", err)
-	// }
 
-	db, err := rawdb.NewPebbleDBDatabase("data", 1024, 128, "", false)
+	option := rawdb.OpenOptions{
+		Type:             "chainkv",
+		Host:             ctx.String(utils.DbHost.Name),
+		Port:             ctx.String(utils.DbPort.Name),
+		DisableFreeze:    true,
+		PruneAncientData: false,
+		ReadOnly:         false,
+	}
+
+	chaindb, err := rawdb.Open(option)
 	if err != nil {
-		utils.Fatalf("Failed to open database: %v", err)
+		log.Error("open chaindb failed", "err", err)
 	}
 
 	cfg := &ethconfig.Defaults
 	cfg.NoPruning = true
 	cfg.TriesVerifyMode = core.FullVerify
 
-	ethereum = eth.NewEthereum(db, cfg)
+	ethereum = eth.NewEthereum(chaindb, cfg)
 
 	log.Info("create blockchain success")
 }

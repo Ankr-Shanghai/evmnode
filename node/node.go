@@ -694,7 +694,8 @@ func (n *Node) OpenDatabase(name string, cache, handles int, namespace string, r
 			Cache:     cache,
 			Handles:   handles,
 			ReadOnly:  readonly,
-			Remote:    n.config.DBRemote,
+			Host:      n.config.DBHost,
+			Port:      n.config.DBPort,
 		})
 	}
 
@@ -751,7 +752,8 @@ func (n *Node) OpenDatabaseWithFreezer(name string, cache, handles int, ancient,
 			DisableFreeze:     disableFreeze,
 			IsLastOffset:      isLastOffset,
 			PruneAncientData:  pruneAncientData,
-			Remote:            n.config.DBRemote,
+			Host:              n.config.DBHost,
+			Port:              n.config.DBPort,
 		})
 	}
 

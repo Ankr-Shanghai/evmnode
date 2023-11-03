@@ -46,7 +46,8 @@ func start(ctx *cli.Context) error {
 			return err
 		}
 		log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
-		for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
+		// for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
+		for i := header.Number.Uint64() + 1; i <= 5; i++ {
 		DoGgain:
 			block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
 			if err != nil {
@@ -57,30 +58,31 @@ func start(ctx *cli.Context) error {
 			}
 			ethereum.BlockChain().InsertChain([]*types.Block{block})
 		}
+		return nil
 		//
-		tickSecond := time.Tick(time.Second)
-		for {
-			select {
-			case <-tickSecond:
-				header := ethereum.BlockChain().CurrentHeader()
-				remoteBlockNumber, err := source.BackendClient.BlockNumber(c)
-				if err != nil {
-					log.Error("import", "take remote latest block", err)
-					continue
-				}
-				log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
-				for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
-				DoGgainLoop:
-					block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
-					if err != nil {
-						log.Error("import", "take remote block", err)
-						time.Sleep(time.Millisecond * 100)
-						goto DoGgainLoop
-					}
-					ethereum.BlockChain().InsertChain([]*types.Block{block})
-				}
-			}
-		}
+		// tickSecond := time.Tick(time.Second)
+		// for {
+		// 	select {
+		// 	case <-tickSecond:
+		// 		header := ethereum.BlockChain().CurrentHeader()
+		// 		remoteBlockNumber, err := source.BackendClient.BlockNumber(c)
+		// 		if err != nil {
+		// 			log.Error("import", "take remote latest block", err)
+		// 			continue
+		// 		}
+		// 		log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
+		// 		for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
+		// 		DoGgainLoop:
+		// 			block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
+		// 			if err != nil {
+		// 				log.Error("import", "take remote block", err)
+		// 				time.Sleep(time.Millisecond * 100)
+		// 				goto DoGgainLoop
+		// 			}
+		// 			ethereum.BlockChain().InsertChain([]*types.Block{block})
+		// 		}
+		// 	}
+		// }
 	})
 
 	gs.RegisterService("evm", func(c context.Context) error {
@@ -111,6 +113,10 @@ func start(ctx *cli.Context) error {
 			log.Error("evm service boot", "err", err)
 			return err
 		}
+
+		gs.RegisterService("hello", func(ctx context.Context) error {
+			return nil
+		})
 
 		return nil
 	})
