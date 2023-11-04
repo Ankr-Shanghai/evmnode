@@ -46,8 +46,7 @@ func start(ctx *cli.Context) error {
 			return err
 		}
 		log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
-		// for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
-		for i := header.Number.Uint64() + 1; i <= 5; i++ {
+		for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
 		DoGgain:
 			block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
 			if err != nil {

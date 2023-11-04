@@ -130,8 +130,9 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 	}
 	vmConfig := vm.Config{EnablePreimageRecording: false}
 	var (
-		overrides   core.ChainOverrides
-		history     uint64 = 64
+		overrides core.ChainOverrides
+		// 0- preserve all tx history
+		history     uint64 = 0
 		cacheConfig        = &core.CacheConfig{
 			TrieCleanLimit:      config.TrieCleanCache,
 			TrieCleanNoPrefetch: config.NoPrefetch,

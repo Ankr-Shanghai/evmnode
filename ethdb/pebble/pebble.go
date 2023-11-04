@@ -235,6 +235,9 @@ func (d *Database) Close() error {
 		}
 		d.quitChan = nil
 	}
+
+	d.db.Flush()
+
 	return d.db.Close()
 }
 
