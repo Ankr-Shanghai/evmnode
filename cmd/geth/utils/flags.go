@@ -74,6 +74,12 @@ var (
 		Value: "/tmp/snap",
 		Usage: "snapshot path",
 	}
+
+	SnapEngine = &cli.StringFlag{
+		Name:  "snap-engine",
+		Value: "leveldb",
+		Usage: "snapshot storage engine",
+	}
 )
 
 // ParseStateScheme resolves scheme identifier from CLI flag. If the provided

@@ -14,7 +14,7 @@ func restore(ctx *cli.Context) error {
 	newBlockChain(ctx)
 
 	snapPath := ctx.String(utils.SnapPath.Name)
-	engine := ctx.String(utils.Engine.Name)
+	engine := ctx.String(utils.SnapEngine.Name)
 	var (
 		chainDb ethdb.Database
 		option  rawdb.OpenOptions
