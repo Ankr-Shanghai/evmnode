@@ -135,28 +135,13 @@ func start(ctx *cli.Context) error {
 
 func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, chanBlocks chan<- []*types.Block) {
 	defer wg.Done()
-	batchSize := 1024
 	for i := from; i <= to; i++ {
-		if to-i > uint64(batchSize) {
-			blks := make([]*types.Block, 0, batchSize)
-			for j := 0; j < batchSize; j++ {
-				block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
-				if err != nil {
-					log.Error("takeBlocks", "err", err)
-					os.Exit(-1)
-				}
-				blks = append(blks, block)
-			}
-			chanBlocks <- blks
-			i += uint64(batchSize)
-		} else {
-			block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
-			if err != nil {
-				log.Error("takeBlocks", "err", err)
-				os.Exit(-1)
-			}
-			chanBlocks <- []*types.Block{block}
+		block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
+		if err != nil {
+			log.Error("takeBlocks", "err", err)
+			os.Exit(-1)
 		}
+		chanBlocks <- []*types.Block{block}
 	}
 }
 
