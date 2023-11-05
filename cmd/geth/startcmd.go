@@ -3,11 +3,14 @@ package main
 import (
 	"context"
 	"math/big"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tracers"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/pkg/source"
@@ -47,21 +50,18 @@ func start(ctx *cli.Context) error {
 		}
 		log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
 
-		var gerr error
-
-		for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
-		DoGgain:
-			block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
-			if err != nil {
-				log.Error("import", "take remote block", err)
-				time.Sleep(time.Millisecond * 100)
-				source.InitBackendClient(ctx)
-				goto DoGgain
-			}
-			ethereum.BlockChain().InsertChain([]*types.Block{block})
-		}
+		// take blocks
+		chanBlocks := make(chan []*types.Block, 1024)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		go takeBlocks(&wg, source.BackendClient, header.Number.Uint64()+1, remoteBlockNumber, chanBlocks)
+		// consume blocks
+		wg.Add(1)
+		go consumeBlocks(&wg, chanBlocks)
+		wg.Wait()
 
 		tickSecond := time.Tick(time.Second)
+		var gerr error
 		for {
 			select {
 			case <-tickSecond:
@@ -131,4 +131,41 @@ func start(ctx *cli.Context) error {
 
 	gs.Wait()
 	return nil
+}
+
+func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, chanBlocks chan<- []*types.Block) {
+	defer wg.Done()
+	batchSize := 1024
+	for i := from; i <= to; i++ {
+		if to-i > uint64(batchSize) {
+			blks := make([]*types.Block, 0, batchSize)
+			for j := 0; j < batchSize; j++ {
+				block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
+				if err != nil {
+					log.Error("takeBlocks", "err", err)
+					os.Exit(-1)
+				}
+				blks = append(blks, block)
+			}
+			chanBlocks <- blks
+			i += uint64(batchSize)
+		} else {
+			block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
+			if err != nil {
+				log.Error("takeBlocks", "err", err)
+				os.Exit(-1)
+			}
+			chanBlocks <- []*types.Block{block}
+		}
+	}
+}
+
+func consumeBlocks(wg *sync.WaitGroup, chanBlocks <-chan []*types.Block) {
+	defer wg.Done()
+	for {
+		select {
+		case blks := <-chanBlocks:
+			ethereum.BlockChain().InsertChain(blks)
+		}
+	}
 }
