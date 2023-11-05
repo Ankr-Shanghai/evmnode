@@ -51,7 +51,7 @@ func start(ctx *cli.Context) error {
 		log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
 
 		// take blocks
-		chanBlocks := make(chan []*types.Block, 1024)
+		chanBlocks := make(chan types.Blocks, 1024)
 		wg := sync.WaitGroup{}
 		wg.Add(1)
 		go takeBlocks(&wg, source.BackendClient, header.Number.Uint64()+1, remoteBlockNumber, chanBlocks)
@@ -133,7 +133,7 @@ func start(ctx *cli.Context) error {
 	return nil
 }
 
-func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, chanBlocks chan<- []*types.Block) {
+func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, chanBlocks chan<- types.Blocks) {
 	defer wg.Done()
 	for i := from; i <= to; i++ {
 		block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
@@ -141,11 +141,11 @@ func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, c
 			log.Error("takeBlocks", "err", err)
 			os.Exit(-1)
 		}
-		chanBlocks <- []*types.Block{block}
+		chanBlocks <- types.Blocks{block}
 	}
 }
 
-func consumeBlocks(wg *sync.WaitGroup, chanBlocks <-chan []*types.Block) {
+func consumeBlocks(wg *sync.WaitGroup, chanBlocks <-chan types.Blocks) {
 	defer wg.Done()
 	for {
 		select {

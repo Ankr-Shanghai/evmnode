@@ -63,6 +63,7 @@ var Defaults = Config{
 	StateScheme:        rawdb.HashScheme,
 	LightPeers:         100,
 	DatabaseCache:      512,
+	NoPruning:          true,
 	TrieCleanCache:     154,
 	TrieDirtyCache:     256,
 	TrieTimeout:        60 * time.Minute,

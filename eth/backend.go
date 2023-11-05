@@ -91,6 +91,19 @@ type Ethereum struct {
 }
 
 func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
+
+	if config.NoPruning && config.TrieDirtyCache > 0 {
+		if config.SnapshotCache > 0 {
+			config.TrieCleanCache += config.TrieDirtyCache * 3 / 5
+			config.SnapshotCache += config.TrieDirtyCache * 2 / 5
+		} else {
+			config.TrieCleanCache += config.TrieDirtyCache
+		}
+		config.TrieDirtyCache = 0
+	}
+
+	log.Info("Allocated trie memory caches", "clean", common.StorageSize(config.TrieCleanCache)*1024*1024, "dirty", common.StorageSize(config.TrieDirtyCache)*1024*1024)
+
 	eth := &Ethereum{
 		config:            config,
 		merger:            consensus.NewMerger(chainDb),
@@ -139,7 +152,7 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 			TrieDirtyLimit:      config.TrieDirtyCache,
 			TrieDirtyDisabled:   config.NoPruning,
 			TrieTimeLimit:       config.TrieTimeout,
-			NoTries:             config.TriesVerifyMode != core.LocalVerify,
+			NoTries:             false,
 			SnapshotLimit:       config.SnapshotCache,
 			TriesInMemory:       config.TriesInMemory,
 			Preimages:           config.Preimages,
@@ -171,8 +184,9 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 	return eth
 }
 
+// not local block
 func shouldPreserveBlock(header *types.Header) bool {
-	return true
+	return false
 }
 
 // New creates a new Ethereum object (including the
