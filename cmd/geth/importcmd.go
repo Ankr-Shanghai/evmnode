@@ -30,19 +30,15 @@ func restore(ctx *cli.Context) error {
 		return err
 	}
 
-	localBlockNuber := ethereum.BlockChain().CurrentHeader().Number.Uint64() + 1
+	idx := rawdb.ReadHeadHeader(chainDb).Number.Uint64() + 1
 	snapBlockNumber := rawdb.ReadHeadBlock(chainDb).Number().Uint64()
-	log.Info("restore", "localBlockNuber", localBlockNuber, "snapBlockNumber", snapBlockNumber)
+	log.Info("restore", "idx", idx, "snapBlockNumber", snapBlockNumber)
 
 	//
-	for {
-		if localBlockNuber > snapBlockNumber {
-			break
-		}
-		block := rawdb.ReadBlock(chainDb, rawdb.ReadCanonicalHash(chainDb, localBlockNuber), localBlockNuber)
+	for ; idx <= snapBlockNumber; idx++ {
+		block := rawdb.ReadBlock(chainDb, rawdb.ReadCanonicalHash(chainDb, idx), idx)
 		ethereum.BlockChain().InsertChain([]*types.Block{block})
-		localBlockNuber++
 	}
-	log.Info("restore done", "current block", localBlockNuber)
+	log.Info("restore done", "current block", idx)
 	return nil
 }

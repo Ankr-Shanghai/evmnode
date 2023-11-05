@@ -38,6 +38,16 @@ var (
 		},
 	}
 
+	chaindataCmd = &cli.Command{
+		Name:   "chaindata",
+		Usage:  "import missing blocks",
+		Action: chaindata,
+		Flags: []cli.Flag{
+			utils.SnapPath,
+			utils.SnapEngine,
+		},
+	}
+
 	rpccmd = &cli.Command{
 		Name:   "rpc",
 		Usage:  "boot rpc service",

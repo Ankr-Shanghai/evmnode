@@ -19,6 +19,7 @@ func init() {
 		initCmd,
 		startCmd,
 		importCmd,
+		chaindataCmd,
 		rpccmd,
 		versionCommand,
 	}
