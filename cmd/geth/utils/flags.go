@@ -70,15 +70,17 @@ var (
 	}
 
 	SnapPath = &cli.StringFlag{
-		Name:  "snap",
-		Value: "/tmp/snap",
-		Usage: "snapshot path",
+		Name:    "snap",
+		Aliases: []string{"s"},
+		Value:   "/tmp/snap",
+		Usage:   "snapshot path",
 	}
 
 	SnapEngine = &cli.StringFlag{
-		Name:  "snap-engine",
-		Value: "leveldb",
-		Usage: "snapshot storage engine",
+		Name:    "snap-engine",
+		Aliases: []string{"e"},
+		Value:   "leveldb",
+		Usage:   "snapshot storage engine",
 	}
 )
 

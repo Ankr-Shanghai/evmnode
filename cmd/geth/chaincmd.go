@@ -33,8 +33,8 @@ var (
 		Usage:  "import missing blocks",
 		Action: restore,
 		Flags: []cli.Flag{
-			utils.Engine,
 			utils.SnapPath,
+			utils.SnapEngine,
 		},
 	}
 
