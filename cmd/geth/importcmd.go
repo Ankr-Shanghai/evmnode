@@ -30,7 +30,7 @@ func restore(ctx *cli.Context) error {
 		return err
 	}
 
-	localBlockNuber := ethereum.BlockChain().CurrentHeader().Number.Uint64()
+	localBlockNuber := ethereum.BlockChain().CurrentHeader().Number.Uint64() + 1
 	snapBlockNumber := rawdb.ReadHeadBlock(chainDb).Number().Uint64()
 	log.Info("restore", "localBlockNuber", localBlockNuber, "snapBlockNumber", snapBlockNumber)
 
