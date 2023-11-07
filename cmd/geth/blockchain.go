@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/core"
@@ -12,6 +13,7 @@ import (
 	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,6 +36,8 @@ func newBlockChain(ctx *cli.Context) {
 
 	ethereum = eth.NewEthereum(chaindb, cfg)
 	ethereum.Start()
+
+	debug.SetMemoryLimit(16 * opt.GiB)
 
 	log.Info("create blockchain success")
 }
