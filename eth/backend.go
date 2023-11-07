@@ -514,17 +514,23 @@ func (s *Ethereum) Start() error {
 func (s *Ethereum) Stop() error {
 	// Stop all the peer-related stuff first.
 	// Then stop everything else.
+	log.Info("stop ethereum")
 	s.bloomIndexer.Close()
 	close(s.closeBloomHandler)
+	log.Info("stop bloom Indexer")
 	// s.txPool.Close()
 	s.blockchain.Stop()
+	log.Info("stop blockchain")
+
 	s.engine.Close()
+	log.Info("stop engine")
 
 	// Clean shutdown marker as the last thing before closing db
 	s.shutdownTracker.Stop()
+	log.Info("stop shutdown tracker")
 
 	s.chainDb.Close()
-	// s.eventMux.Stop()
+	log.Info("stop chaindb")
 
 	return nil
 }
