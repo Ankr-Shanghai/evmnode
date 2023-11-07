@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/pkg/source"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -33,8 +31,7 @@ func rpcstart(ctx *cli.Context) error {
 	gs.RegisterService("evm", func(c context.Context) error {
 		srv := rpc.NewServer()
 
-		apis := ethapi.GetAPIs(ethereum.APIBackend)
-		apis = append(apis, tracers.APIs(ethereum.APIBackend)...)
+		apis := getAllAPIs(ethereum.APIBackend)
 
 		for _, api := range apis {
 			if err := srv.RegisterName(api.Namespace, api.Service); err != nil {

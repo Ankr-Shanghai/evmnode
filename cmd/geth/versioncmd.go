@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	clientIdentifier = "geth" // Client identifier to advertise over the network
+	clientIdentifier = "ankr_node" // Client identifier to advertise over the network
 )
 
 var versionCommand = &cli.Command{
@@ -21,6 +21,16 @@ var versionCommand = &cli.Command{
 	Description: `
 The output of this command is supposed to be machine-readable.
 `,
+}
+
+func clientVersion() string {
+	return fmt.Sprintf("%s/v%s/%s/%s/%s",
+		clientIdentifier,
+		params.VersionWithMeta,
+		runtime.GOOS,
+		runtime.GOARCH,
+		runtime.Version(),
+	)
 }
 
 func printVersion(ctx *cli.Context) error {
