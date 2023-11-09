@@ -21,7 +21,6 @@ func init() {
 		importCmd,
 		chaindataCmd,
 		rpccmd,
-		batchimportcmd,
 		versionCommand,
 	}
 	app.Flags = []cli.Flag{
