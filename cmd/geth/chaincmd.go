@@ -57,4 +57,14 @@ var (
 			utils.SvcPort,
 		},
 	}
+
+	batchimportcmd = &cli.Command{
+		Name:  "batchimport",
+		Usage: "batch import service",
+		Flags: []cli.Flag{
+			utils.SvcHost,
+			utils.SvcPort,
+		},
+		Action: batchimport,
+	}
 )
