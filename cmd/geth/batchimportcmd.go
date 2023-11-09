@@ -77,7 +77,9 @@ func insertBlock() {
 		select {
 		case blks := <-chanBlocks:
 			_, err = ethereum.BlockChain().InsertChain(blks)
-			os.Exit(0)
+			if err != nil {
+				os.Exit(0)
+			}
 		}
 	}
 }
