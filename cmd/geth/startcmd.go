@@ -108,6 +108,7 @@ func start(ctx *cli.Context) error {
 			Prefork:               false,
 			ServerHeader:          "Ankr team",
 			DisableStartupMessage: true,
+			StreamRequestBody:     true,
 		})
 
 		svc.Use(recover.New())
