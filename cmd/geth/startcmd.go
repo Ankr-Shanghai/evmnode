@@ -109,6 +109,7 @@ func start(ctx *cli.Context) error {
 			ServerHeader:          "Ankr team",
 			DisableStartupMessage: true,
 			StreamRequestBody:     true,
+			BodyLimit:             500 * 1024 * 1024,
 		})
 
 		svc.Use(recover.New())
