@@ -35,6 +35,8 @@ func importstore(ctx *cli.Context) error {
 			Prefork:               false,
 			ServerHeader:          "Ankr team",
 			DisableStartupMessage: true,
+			StreamRequestBody:     true,
+			BodyLimit:             500 * 1024 * 1024,
 		})
 
 		svc.Post("/blocks", blockImport)
