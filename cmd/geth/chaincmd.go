@@ -28,16 +28,6 @@ var (
 		Action: start,
 	}
 
-	importCmd = &cli.Command{
-		Name:   "import",
-		Usage:  "import missing blocks",
-		Action: restore,
-		Flags: []cli.Flag{
-			utils.SnapPath,
-			utils.SnapEngine,
-		},
-	}
-
 	chaindataCmd = &cli.Command{
 		Name:   "chaindata",
 		Usage:  "import missing blocks",
@@ -56,5 +46,15 @@ var (
 			utils.SvcHost,
 			utils.SvcPort,
 		},
+	}
+
+	importCmd = &cli.Command{
+		Name:  "import",
+		Usage: "import blocks service",
+		Flags: []cli.Flag{
+			utils.SvcHost,
+			utils.SvcPort,
+		},
+		Action: importstore,
 	}
 )
