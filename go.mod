@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.21.3
 
 require (
-	github.com/Ankr-Shanghai/chainkv v0.0.0-20231107041229-00acb426f2d9
+	github.com/Ankr-Shanghai/chainkv v0.0.0-20231111131804-8eef2bf47f2e
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.3.0
 	github.com/VictoriaMetrics/fastcache v1.12.0
 	github.com/bnb-chain/ics23 v0.1.0
