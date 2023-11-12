@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"runtime/debug"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
@@ -59,15 +58,15 @@ func OpenDatabase(ctx *cli.Context) (ethdb.Database, error) {
 	case "pebble":
 		option.Type = "pebble"
 		option.Directory = ctx.String(utils.DataDir.Name)
-		option.AncientsDirectory = fmt.Sprintf("%s/ancients", ctx.String(utils.DataDir.Name))
-		option.Cache = 1024 // 1G
-		option.Handles = 256
+		option.AncientsDirectory = ""
+		option.Cache = 4 * 1024 // 1G
+		option.Handles = 1024
 	case "leveldb":
 		option.Type = "leveldb"
 		option.Directory = ctx.String(utils.DataDir.Name)
-		option.AncientsDirectory = fmt.Sprintf("%s/ancients", ctx.String(utils.DataDir.Name))
-		option.Cache = 1024 // 1G
-		option.Handles = 256
+		option.AncientsDirectory = ""
+		option.Cache = 4 * 1024 // 1G
+		option.Handles = 1024
 	}
 
 	chaindb, err := rawdb.Open(option)
