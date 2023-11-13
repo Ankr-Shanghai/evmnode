@@ -3,18 +3,15 @@ package main
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
 func getAllAPIs(apiBackend *eth.EthAPIBackend) []rpc.API {
-	apis := ethapi.GetAPIs(apiBackend)
+	apis := ethereum.APIs()
 	apis = append(apis, tracers.APIs(apiBackend)...)
 	apis = append(apis, extapis()...)
 
@@ -24,17 +21,11 @@ func getAllAPIs(apiBackend *eth.EthAPIBackend) []rpc.API {
 func extapis() []rpc.API {
 	return []rpc.API{
 		{
-			Namespace: "debug",
-			Service:   debug.Handler,
-		}, {
 			Namespace: "web3",
 			Service:   &web3API{},
 		}, {
 			Namespace: "net",
 			Service:   newNetAPI(ethereum.NetworkID),
-		}, {
-			Namespace: "eth",
-			Service:   newEthereumAPI(),
 		},
 	}
 }
@@ -74,40 +65,4 @@ func (s *netAPI) PeerCount() hexutil.Uint {
 // Version returns the current ethereum protocol version.
 func (s *netAPI) Version() string {
 	return fmt.Sprintf("%d", s.networkVersion)
-}
-
-type ethereumAPI struct {
-}
-
-// NewEthereumAccountAPI creates a new EthereumAccountAPI.
-func newEthereumAPI() *ethereumAPI {
-	return &ethereumAPI{}
-}
-
-// Accounts returns the collection of accounts this node manages.
-func (s *ethereumAPI) Accounts() []common.Address {
-	return []common.Address{}
-}
-
-func (s *ethereumAPI) Mining() bool {
-	return false
-}
-
-// Etherbase is the address that mining rewards will be sent to.
-func (api *ethereumAPI) Etherbase() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-// Coinbase is the address that mining rewards will be sent to (alias for Etherbase).
-func (api *ethereumAPI) Coinbase() (common.Address, error) {
-	return common.Address{}, nil
-}
-
-// Hashrate returns the POW hashrate.
-func (api *ethereumAPI) Hashrate() hexutil.Uint64 {
-	return hexutil.Uint64(0)
-}
-
-func (s *ethereumAPI) Syncing() bool {
-	return false
 }

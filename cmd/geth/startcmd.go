@@ -35,63 +35,6 @@ func start(ctx *cli.Context) error {
 		return nil
 	})
 
-	// gs.RegisterService("import", func(c context.Context) error {
-	// 	// make up for missing blocks
-	// 	// 1. get local latest block
-	// 	// 2. get remote latest block
-	// 	// 3. get missing blocks
-	// 	// 4. import missing blocks
-	// 	header := ethereum.BlockChain().CurrentHeader()
-	// 	remoteBlockNumber, err := source.BackendClient.BlockNumber(c)
-	// 	if err != nil {
-	// 		log.Error("import", "take remote latest block", err)
-	// 		return err
-	// 	}
-	// 	log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
-
-	// 	// take blocks
-	// 	chanBlocks := make(chan types.Blocks, 1024)
-	// 	wg := sync.WaitGroup{}
-	// 	wg.Add(1)
-	// 	go takeBlocks(&wg, source.BackendClient, header.Number.Uint64()+1, remoteBlockNumber, chanBlocks)
-	// 	// consume blocks
-	// 	wg.Add(1)
-	// 	go consumeBlocks(&wg, chanBlocks)
-	// 	wg.Wait()
-
-	// 	tickSecond := time.Tick(time.Second)
-	// 	var gerr error
-	// 	for {
-	// 		select {
-	// 		case <-tickSecond:
-	// 			header := ethereum.BlockChain().CurrentHeader()
-	// 			remoteBlockNumber, err := source.BackendClient.BlockNumber(c)
-	// 			if err != nil {
-	// 				log.Error("import", "take remote latest block", err)
-	// 				continue
-	// 			}
-	// 			log.Info("import", "localBlockNumber", header.Number, "remoteBlockNumber", remoteBlockNumber)
-	// 			for i := header.Number.Uint64() + 1; i <= remoteBlockNumber; i++ {
-	// 			DoGgainLoop:
-	// 				block, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i)))
-	// 				if err != nil {
-	// 					gerr = err
-	// 				}
-	// 				block24, err := source.BackendClient.BlockByNumber(c, big.NewInt(int64(i-24)))
-	// 				gerr = err
-
-	// 				if gerr != nil {
-	// 					log.Error("import", "take remote block", err)
-	// 					time.Sleep(time.Millisecond * 100)
-	// 					goto DoGgainLoop
-	// 				}
-
-	// 				ethereum.BlockChain().InsertChain([]*types.Block{block, block24})
-	// 			}
-	// 		}
-	// 	}
-	// })
-
 	gs.RegisterService("evm", func(c context.Context) error {
 		srv := rpc.NewServer()
 
