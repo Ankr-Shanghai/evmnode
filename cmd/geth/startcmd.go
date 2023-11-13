@@ -3,14 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"math/big"
-	"os"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/cmd/geth/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/pkg/source"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -129,26 +125,4 @@ type txExtraInfo struct {
 	BlockNumber *string         `json:"blockNumber,omitempty"`
 	BlockHash   *common.Hash    `json:"blockHash,omitempty"`
 	From        *common.Address `json:"from,omitempty"`
-}
-
-func takeBlocks(wg *sync.WaitGroup, client *ethclient.Client, from, to uint64, chanBlocks chan<- types.Blocks) {
-	defer wg.Done()
-	for i := from; i <= to; i++ {
-		block, err := client.BlockByNumber(context.Background(), big.NewInt(int64(i)))
-		if err != nil {
-			log.Error("takeBlocks", "err", err)
-			os.Exit(-1)
-		}
-		chanBlocks <- types.Blocks{block}
-	}
-}
-
-func consumeBlocks(wg *sync.WaitGroup, chanBlocks <-chan types.Blocks) {
-	defer wg.Done()
-	for {
-		select {
-		case blks := <-chanBlocks:
-			ethereum.BlockChain().InsertChain(blks)
-		}
-	}
 }

@@ -74,7 +74,7 @@ func (msg *jsonrpcMessage) hasValidID() bool {
 }
 
 func (msg *jsonrpcMessage) hasValidVersion() bool {
-	return msg.Version == vsn
+	return true
 }
 
 func (msg *jsonrpcMessage) isSubscribe() bool {

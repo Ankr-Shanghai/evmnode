@@ -33,6 +33,7 @@ func newBlockChain(ctx *cli.Context) {
 	cfg.NoPruning = true
 	cfg.TriesVerifyMode = core.FullVerify
 	cfg.RangeLimit = true
+	cfg.NetworkId = 56
 
 	ethereum = eth.NewEthereum(chaindb, cfg)
 	ethereum.Start()
