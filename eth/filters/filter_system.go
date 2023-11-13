@@ -237,35 +237,36 @@ type EventSystem struct {
 // or by stopping the given mux.
 func NewEventSystem(sys *FilterSystem, lightMode bool) *EventSystem {
 	m := &EventSystem{
-		sys:               sys,
-		backend:           sys.backend,
-		lightMode:         lightMode,
-		install:           make(chan *subscription),
-		uninstall:         make(chan *subscription),
-		txsCh:             make(chan core.NewTxsEvent, txChanSize),
-		logsCh:            make(chan []*types.Log, logsChanSize),
-		rmLogsCh:          make(chan core.RemovedLogsEvent, rmLogsChanSize),
-		pendingLogsCh:     make(chan []*types.Log, logsChanSize),
-		chainCh:           make(chan core.ChainEvent, chainEvChanSize),
-		finalizedHeaderCh: make(chan core.FinalizedHeaderEvent, finalizedHeaderEvChanSize),
-		voteCh:            make(chan core.NewVoteEvent, voteChanSize),
+		sys:       sys,
+		backend:   sys.backend,
+		lightMode: lightMode,
+		install:   make(chan *subscription),
+		uninstall: make(chan *subscription),
+		// txsCh:             make(chan core.NewTxsEvent, txChanSize),
+		logsCh:   make(chan []*types.Log, logsChanSize),
+		rmLogsCh: make(chan core.RemovedLogsEvent, rmLogsChanSize),
+		// pendingLogsCh: make(chan []*types.Log, logsChanSize),
+		chainCh: make(chan core.ChainEvent, chainEvChanSize),
+		// finalizedHeaderCh: make(chan core.FinalizedHeaderEvent, finalizedHeaderEvChanSize),
+		// voteCh:            make(chan core.NewVoteEvent, voteChanSize),
 	}
 
 	// Subscribe events
-	m.txsSub = m.backend.SubscribeNewTxsEvent(m.txsCh)
+	// m.txsSub = m.backend.SubscribeNewTxsEvent(m.txsCh)
 	m.logsSub = m.backend.SubscribeLogsEvent(m.logsCh)
 	m.rmLogsSub = m.backend.SubscribeRemovedLogsEvent(m.rmLogsCh)
 	m.chainSub = m.backend.SubscribeChainEvent(m.chainCh)
-	m.finalizedHeaderSub = m.backend.SubscribeFinalizedHeaderEvent(m.finalizedHeaderCh)
-	m.voteSub = m.backend.SubscribeNewVoteEvent(m.voteCh)
+	// m.finalizedHeaderSub = m.backend.SubscribeFinalizedHeaderEvent(m.finalizedHeaderCh)
+	// m.voteSub = m.backend.SubscribeNewVoteEvent(m.voteCh)
 
 	// Make sure none of the subscriptions are empty
-	if m.txsSub == nil || m.logsSub == nil || m.rmLogsSub == nil || m.chainSub == nil || m.pendingLogsSub == nil {
+	// if m.txsSub == nil || m.logsSub == nil || m.rmLogsSub == nil || m.chainSub == nil || m.pendingLogsSub == nil {
+	if m.logsSub == nil || m.rmLogsSub == nil || m.chainSub == nil {
 		log.Crit("Subscribe for event system failed")
 	}
-	if m.voteSub == nil || m.finalizedHeaderSub == nil {
-		log.Warn("Subscribe for vote or finalized header event failed")
-	}
+	// if m.voteSub == nil || m.finalizedHeaderSub == nil {
+	// 	log.Warn("Subscribe for vote or finalized header event failed")
+	// }
 
 	go m.eventLoop()
 	return m
@@ -617,15 +618,15 @@ func (es *EventSystem) lightFilterLogs(header *types.Header, addresses []common.
 func (es *EventSystem) eventLoop() {
 	// Ensure all subscriptions get cleaned up
 	defer func() {
-		es.txsSub.Unsubscribe()
+		// es.txsSub.Unsubscribe()
 		es.logsSub.Unsubscribe()
 		es.rmLogsSub.Unsubscribe()
-		es.pendingLogsSub.Unsubscribe()
+		// es.pendingLogsSub.Unsubscribe()
 		es.chainSub.Unsubscribe()
-		es.finalizedHeaderSub.Unsubscribe()
-		if es.voteSub != nil {
-			es.voteSub.Unsubscribe()
-		}
+		// es.finalizedHeaderSub.Unsubscribe()
+		// if es.voteSub != nil {
+		// 	es.voteSub.Unsubscribe()
+		// }
 	}()
 
 	index := make(filterIndex)
@@ -633,10 +634,10 @@ func (es *EventSystem) eventLoop() {
 		index[i] = make(map[rpc.ID]*subscription)
 	}
 
-	var voteSubErr <-chan error
-	if es.voteSub != nil {
-		voteSubErr = es.voteSub.Err()
-	}
+	// var voteSubErr <-chan error
+	// if es.voteSub != nil {
+	// 	voteSubErr = es.voteSub.Err()
+	// }
 	for {
 		select {
 		case ev := <-es.txsCh:
@@ -675,18 +676,18 @@ func (es *EventSystem) eventLoop() {
 			close(f.err)
 
 		// System stopped
-		case <-es.txsSub.Err():
-			return
+		// case <-es.txsSub.Err():
+		// 	return
 		case <-es.logsSub.Err():
 			return
 		case <-es.rmLogsSub.Err():
 			return
 		case <-es.chainSub.Err():
 			return
-		case <-es.finalizedHeaderSub.Err():
-			return
-		case <-voteSubErr:
-			return
+			// case <-es.finalizedHeaderSub.Err():
+			// 	return
+			// case <-voteSubErr:
+			// 	return
 		}
 	}
 }

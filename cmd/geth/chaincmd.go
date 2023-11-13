@@ -47,14 +47,4 @@ var (
 			utils.SvcPort,
 		},
 	}
-
-	importCmd = &cli.Command{
-		Name:  "import",
-		Usage: "import blocks service",
-		Flags: []cli.Flag{
-			utils.SvcHost,
-			utils.SvcPort,
-		},
-		Action: importstore,
-	}
 )

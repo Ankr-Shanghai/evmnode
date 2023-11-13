@@ -37,8 +37,7 @@ func start(ctx *cli.Context) error {
 
 	gs.RegisterService("evm", func(c context.Context) error {
 		srv := rpc.NewServer()
-
-		apis := getAllAPIs(ethereum.APIBackend)
+		apis := getAllAPIs()
 
 		for _, api := range apis {
 			if err := srv.RegisterName(api.Namespace, api.Service); err != nil {

@@ -18,7 +18,6 @@ func init() {
 	app.Commands = []*cli.Command{
 		initCmd,
 		startCmd,
-		importCmd,
 		chaindataCmd,
 		rpccmd,
 		versionCommand,

@@ -5,14 +5,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-func getAllAPIs(apiBackend *eth.EthAPIBackend) []rpc.API {
+func getAllAPIs() []rpc.API {
 	apis := ethereum.APIs()
-	apis = append(apis, tracers.APIs(apiBackend)...)
+	apis = append(apis, tracers.APIs(ethereum.APIBackend)...)
 	apis = append(apis, extapis()...)
 
 	return apis

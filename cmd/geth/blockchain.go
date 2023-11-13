@@ -32,11 +32,12 @@ func newBlockChain(ctx *cli.Context) {
 	cfg := &ethconfig.Defaults
 	cfg.NoPruning = true
 	cfg.TriesVerifyMode = core.FullVerify
+	cfg.RangeLimit = true
 
 	ethereum = eth.NewEthereum(chaindb, cfg)
 	ethereum.Start()
 
-	debug.SetMemoryLimit(16 * opt.GiB)
+	debug.SetMemoryLimit(24 * opt.GiB)
 
 	log.Info("create blockchain success")
 }

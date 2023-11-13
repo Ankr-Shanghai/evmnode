@@ -65,15 +65,16 @@ type FilterAPI struct {
 
 // NewFilterAPI returns a new FilterAPI instance.
 func NewFilterAPI(system *FilterSystem, lightMode bool, rangeLimit bool) *FilterAPI {
+	evts := NewEventSystem(system, lightMode)
+
 	api := &FilterAPI{
 		sys:        system,
-		events:     NewEventSystem(system, lightMode),
+		events:     evts,
 		filters:    make(map[rpc.ID]*filter),
 		timeout:    system.cfg.Timeout,
 		rangeLimit: rangeLimit,
 	}
 	go api.timeoutLoop(system.cfg.Timeout)
-
 	return api
 }
 
