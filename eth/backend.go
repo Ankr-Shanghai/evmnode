@@ -81,7 +81,7 @@ type Ethereum struct {
 	gasPrice  *big.Int
 	etherbase common.Address
 
-	networkID uint64
+	NetworkID uint64
 
 	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
 
@@ -110,7 +110,7 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 		chainDb:           chainDb,
 		accountManager:    accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}),
 		closeBloomHandler: make(chan struct{}),
-		networkID:         config.NetworkId,
+		NetworkID:         config.NetworkId,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
@@ -177,6 +177,12 @@ func NewEthereum(chainDb ethdb.Database, config *ethconfig.Config) *Ethereum {
 	eth.blockchain = blockchain
 	eth.engine = engine
 
+	gpoParams := config.GPO
+	if gpoParams.Default == nil {
+		gpoParams.Default = big.NewInt(1e9)
+	}
+	eth.APIBackend.gpo = gasprice.NewOracle(eth.APIBackend, gpoParams)
+
 	eth.bloomIndexer.Start(eth.blockchain)
 	// Successful startup; push a marker and check previous unclean shutdowns.
 	eth.shutdownTracker.MarkStartup()
@@ -226,7 +232,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		eventMux:          stack.EventMux(),
 		accountManager:    stack.AccountManager(),
 		closeBloomHandler: make(chan struct{}),
-		networkID:         config.NetworkId,
+		NetworkID:         config.NetworkId,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		shutdownTracker:   shutdowncheck.NewShutdownTracker(chainDb),
