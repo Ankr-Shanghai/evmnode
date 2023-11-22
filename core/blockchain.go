@@ -1906,20 +1906,20 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 
 		// Enable prefetching to pull in trie node paths while processing transactions
 		statedb.StartPrefetcher("chain")
-		interruptCh := make(chan struct{})
+		// interruptCh := make(chan struct{})
 		// For diff sync, it may fallback to full sync, so we still do prefetch
-		if len(block.Transactions()) >= prefetchTxNumber {
-			// do Prefetch in a separate goroutine to avoid blocking the critical path
+		// if len(block.Transactions()) >= prefetchTxNumber {
+		// do Prefetch in a separate goroutine to avoid blocking the critical path
 
-			// 1.do state prefetch for snapshot cache
-			throwaway := statedb.CopyDoPrefetch()
-			go bc.prefetcher.Prefetch(block, throwaway, &bc.vmConfig, interruptCh)
+		// 1.do state prefetch for snapshot cache
+		// throwaway := statedb.CopyDoPrefetch()
+		// go bc.prefetcher.Prefetch(block, throwaway, &bc.vmConfig, interruptCh)
 
-			// 2.do trie prefetch for MPT trie node cache
-			// it is for the big state trie tree, prefetch based on transaction's From/To address.
-			// trie prefetcher is thread safe now, ok to prefetch in a separate routine
-			go throwaway.TriePrefetchInAdvance(block, signer)
-		}
+		// 2.do trie prefetch for MPT trie node cache
+		// it is for the big state trie tree, prefetch based on transaction's From/To address.
+		// trie prefetcher is thread safe now, ok to prefetch in a separate routine
+		// go throwaway.TriePrefetchInAdvance(block, signer)
+		// }
 
 		//Process block using the parent state as reference point
 		if bc.pipeCommit {
@@ -1928,7 +1928,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		statedb.SetExpectedStateRoot(block.Root())
 		pstart := time.Now()
 		statedb, receipts, logs, usedGas, err := bc.processor.Process(block, statedb, bc.vmConfig)
-		close(interruptCh) // state prefetch can be stopped
+		// close(interruptCh) // state prefetch can be stopped
 		if err != nil {
 			bc.reportBlock(block, receipts, err)
 			statedb.StopPrefetcher()

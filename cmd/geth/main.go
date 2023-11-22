@@ -29,6 +29,7 @@ func init() {
 		utils.DbSize,
 		utils.Engine,
 		utils.DataDir,
+		utils.ExportState,
 	}
 	// app.Flags = append(app.Flags, debug.Flags...)
 

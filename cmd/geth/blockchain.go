@@ -19,6 +19,7 @@ import (
 var (
 	ethereum *eth.Ethereum
 	err      error
+	cfg      *ethconfig.Config
 )
 
 func newBlockChain(ctx *cli.Context) {
@@ -29,7 +30,7 @@ func newBlockChain(ctx *cli.Context) {
 		return
 	}
 
-	cfg := &ethconfig.Defaults
+	cfg = &ethconfig.Defaults
 	cfg.NoPruning = true
 	cfg.TriesVerifyMode = core.FullVerify
 	cfg.RangeLimit = true
@@ -41,6 +42,9 @@ func newBlockChain(ctx *cli.Context) {
 	debug.SetMemoryLimit(24 * opt.GiB)
 
 	log.Info("create blockchain success")
+
+	// export state routine start
+	startExportState(ctx)
 }
 
 func OpenDatabase(ctx *cli.Context) (ethdb.Database, error) {

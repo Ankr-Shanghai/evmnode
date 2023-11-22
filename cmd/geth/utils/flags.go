@@ -82,6 +82,14 @@ var (
 		Value:   "leveldb",
 		Usage:   "snapshot storage engine",
 	}
+
+	// export state flag
+	ExportState = &cli.BoolFlag{
+		Name:    "export-state",
+		Aliases: []string{"es"},
+		Value:   false,
+		Usage:   "export state",
+	}
 )
 
 // ParseStateScheme resolves scheme identifier from CLI flag. If the provided
