@@ -1073,6 +1073,61 @@ func (p *Parlia) distributeFinalityReward(chain consensus.ChainHeaderReader, sta
 	return p.applyTransaction(msg, state, header, cx, txs, receipts, systemTxs, usedGas, mining)
 }
 
+func (p *Parlia) CalculateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, _ []*types.Withdrawal, _ consensus.SystemCall,
+) ([]consensus.Reward, error) {
+	var defaultReward = []consensus.Reward{
+		{
+			Beneficiary: header.Coinbase,
+			Kind:        consensus.RewardAuthor,
+			Amount:      big.NewInt(0),
+		},
+	}
+	if !p.chainConfig.IsPlato(header.Number) {
+		return defaultReward, nil
+	}
+
+	var (
+		validatorContract = common.HexToAddress(systemcontracts.ValidatorContract)
+		RewardContract    = common.HexToAddress(systemcontracts.SystemRewardContract)
+
+		totalValue *big.Int
+	)
+
+	var finalityRewardRatio = state.GetState(validatorContract, common.BigToHash(big.NewInt(15)))
+	if finalityRewardRatio.Cmp(common.Hash{}) == 0 {
+		return []consensus.Reward{}, nil
+	}
+
+	var previousBalanceOfSystemReward = state.GetState(validatorContract, common.BigToHash(big.NewInt(17)))
+
+	var rewardContractBalance = state.GetBalance(RewardContract)
+
+	if rewardContractBalance.Cmp(big.NewInt(0).Mul(big.NewInt(100), big.NewInt(1e18))) > 0 {
+		totalValue = big.NewInt(0).Div(rewardContractBalance, big.NewInt(100))
+	} else if rewardContractBalance.Cmp(previousBalanceOfSystemReward.Big()) > 0 {
+		// totalValue = (balanceOfSystemReward.sub(previousBalanceOfSystemReward)).mul(finalityRewardRatio).div(100);
+		totalValue = big.NewInt(0).Div(big.NewInt(0).Mul(big.NewInt(0).Sub(rewardContractBalance, previousBalanceOfSystemReward.Big()), finalityRewardRatio.Big()), big.NewInt(100))
+	} else {
+		return defaultReward, nil
+	}
+
+	if totalValue.Cmp(rewardContractBalance) >= 0 {
+		totalValue = rewardContractBalance
+	}
+
+	if totalValue.Cmp(big.NewInt(1e18)) > 0 {
+		totalValue = big.NewInt(1e18)
+	}
+
+	return []consensus.Reward{
+		{
+			Beneficiary: header.Coinbase,
+			Kind:        consensus.RewardAuthor,
+			Amount:      totalValue,
+		},
+	}, nil
+}
+
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given.
 func (p *Parlia) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs *[]*types.Transaction,

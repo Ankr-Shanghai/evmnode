@@ -1145,6 +1145,67 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 	s.clearJournalAndRefund()
 }
 
+type StateWriter interface {
+	UpdateAccountData(address common.Address) error
+	UpdateAccountCode(address common.Address) error
+	DeleteAccount(address common.Address) error
+	WriteAccountStorage(address common.Address, key common.Hash, original, value *big.Int) error
+	CreateContract(address common.Address) error
+}
+
+var (
+	SystemAddress = common.HexToAddress("0xffffFFFfFFffffffffffffffFfFFFfffFFFfFFfE")
+)
+
+// FinalizeTx should be called after every transaction.
+func (s *StateDB) FinalizeTx(stateWriter StateWriter) error {
+	for addr := range s.journal.dirties {
+		so, exist := s.stateObjects[addr]
+		if !exist {
+			// ripeMD is 'touched' at block 1714175, in tx 0x1237f737031e40bcde4a8b7e717b2d15e3ecadfe49bb1bbc71ee9deb09c6fcf2
+			// That tx goes out of gas, and although the notion of 'touched' does not exist there, the
+			// touch-event will still be recorded in the journal. Since ripeMD is a special snowflake,
+			// it will persist in the journal even though the journal is reverted. In this special circumstance,
+			// it may exist in `sdb.journal.dirties` but not in `sdb.stateObjects`.
+			// Thus, we can safely ignore it here
+			continue
+		}
+		if so.address == SystemAddress {
+			continue
+		}
+		if so.selfDestructed && so.empty() {
+			if err := stateWriter.DeleteAccount(addr); err != nil {
+				return err
+			}
+		}
+		if so.code != nil && so.dirtyCode {
+			if err := stateWriter.UpdateAccountCode(so.address); err != nil {
+				return err
+			}
+		}
+		if so.created {
+			if err := stateWriter.CreateContract(so.address); err != nil {
+				return err
+			}
+		}
+		for k, v := range so.dirtyStorage {
+			value := v
+			original := so.originStorage[k]
+			if err := stateWriter.WriteAccountStorage(so.address, k, original.Big(), value.Big()); err != nil {
+				return err
+			}
+		}
+		if err := stateWriter.UpdateAccountData(so.address); err != nil {
+			return err
+		}
+
+		s.stateObjectsDirty[addr] = struct{}{}
+	}
+	// Invalidate journal because reverting across transactions is not allowed.
+	s.clearJournalAndRefund()
+	return nil
+}
+
 // IntermediateRoot computes the current root hash of the state trie.
 // It is called in between transactions to get the root hash that
 // goes into transaction receipts.

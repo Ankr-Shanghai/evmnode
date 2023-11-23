@@ -345,6 +345,23 @@ func (beacon *Beacon) Delay(_ consensus.ChainReader, _ *types.Header, _ *time.Du
 	return nil
 }
 
+func (beacon *Beacon) CalculateRewards(config *params.ChainConfig, _ *state.StateDB, header *types.Header, uncles []*types.Header, withdrawals []*types.Withdrawal, syscall consensus.SystemCall,
+) ([]consensus.Reward, error) {
+	// Withdrawals processing.
+	rewards := make([]consensus.Reward, len(withdrawals))
+	for i, w := range withdrawals {
+		// Convert amount from gwei to wei.
+		amount := new(big.Int).SetUint64(w.Amount)
+		amount = amount.Mul(amount, big.NewInt(params.GWei))
+		rewards[i].Beneficiary = w.Address
+		rewards[i].Kind = consensus.RewardAuthor
+		rewards[i].Amount = amount
+
+	}
+	return rewards, nil
+
+}
+
 // Finalize implements consensus.Engine, setting the final state on the header
 func (beacon *Beacon) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, txs *[]*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal, _ *[]*types.Receipt, _ *[]*types.Transaction, _ *uint64) error {
 	// Finalize is different with Prepare, it can be used in both block verification.

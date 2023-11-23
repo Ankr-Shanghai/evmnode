@@ -566,6 +566,11 @@ func (c *Clique) Prepare(chain consensus.ChainHeaderReader, header *types.Header
 	return nil
 }
 
+func (c *Clique) CalculateRewards(config *params.ChainConfig, _ *state.StateDB, header *types.Header, uncles []*types.Header, _ []*types.Withdrawal, syscall consensus.SystemCall,
+) ([]consensus.Reward, error) {
+	return []consensus.Reward{}, nil
+}
+
 // Finalize implements consensus.Engine, ensuring no uncles are set, nor block
 // rewards given.
 func (c *Clique) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, _ *[]*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal,
