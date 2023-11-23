@@ -625,10 +625,14 @@ func (t *OeTracer) Stop(err error) {
 
 // Implements core/state/StateWriter to provide state diffs
 type StateDiff struct {
+	evm   *vm.EVM
 	sdMap map[common.Address]*StateDiffAccount
 }
 
 func (sd *StateDiff) UpdateAccountData(address common.Address) error {
+	if _, ok := sd.evm.Precompile(address); ok {
+		return nil
+	}
 	if _, ok := sd.sdMap[address]; !ok {
 		sd.sdMap[address] = &StateDiffAccount{Storage: make(map[common.Hash]map[string]interface{})}
 	}
@@ -636,6 +640,9 @@ func (sd *StateDiff) UpdateAccountData(address common.Address) error {
 }
 
 func (sd *StateDiff) UpdateAccountCode(address common.Address) error {
+	if _, ok := sd.evm.Precompile(address); ok {
+		return nil
+	}
 	if _, ok := sd.sdMap[address]; !ok {
 		sd.sdMap[address] = &StateDiffAccount{Storage: make(map[common.Hash]map[string]interface{})}
 	}
@@ -643,6 +650,9 @@ func (sd *StateDiff) UpdateAccountCode(address common.Address) error {
 }
 
 func (sd *StateDiff) DeleteAccount(address common.Address) error {
+	if _, ok := sd.evm.Precompile(address); ok {
+		return nil
+	}
 	if _, ok := sd.sdMap[address]; !ok {
 		sd.sdMap[address] = &StateDiffAccount{Storage: make(map[common.Hash]map[string]interface{})}
 	}
@@ -650,6 +660,9 @@ func (sd *StateDiff) DeleteAccount(address common.Address) error {
 }
 
 func (sd *StateDiff) WriteAccountStorage(address common.Address, key common.Hash, original, value *big.Int) error {
+	if _, ok := sd.evm.Precompile(address); ok {
+		return nil
+	}
 	if original.Cmp(value) == 0 {
 		return nil
 	}
@@ -665,6 +678,9 @@ func (sd *StateDiff) WriteAccountStorage(address common.Address, key common.Hash
 }
 
 func (sd *StateDiff) CreateContract(address common.Address) error {
+	if _, ok := sd.evm.Precompile(address); ok {
+		return nil
+	}
 	if _, ok := sd.sdMap[address]; !ok {
 		sd.sdMap[address] = &StateDiffAccount{Storage: make(map[common.Hash]map[string]interface{})}
 	}

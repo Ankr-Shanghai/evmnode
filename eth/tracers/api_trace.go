@@ -63,16 +63,36 @@ func (api *APITrace) Block(ctx context.Context, number rpc.BlockNumber, gasBailO
 
 	// Native tracers have low overhead
 	var (
-		txs         = block.Transactions()
-		blockHash   = block.Hash()
-		blockNumber = block.NumberU64()
-		is158       = api.backend.ChainConfig().IsEIP158(block.Number())
-		blockCtx    = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil)
-		signer      = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
+		txs          = block.Transactions()
+		blockHash    = block.Hash()
+		blockNumber  = block.NumberU64()
+		is158        = api.backend.ChainConfig().IsEIP158(block.Number())
+		blockCtx     = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil)
+		signer       = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
+		posa, isPoSA = api.backend.Engine().(consensus.PoSA)
+		txNum        = len(txs)
+		rewards      []consensus.Reward
 	)
+
+	for _, tx := range txs {
+		if isPoSA {
+			if isSystemTx, err := posa.IsSystemTransaction(tx, block.Header()); err != nil {
+				return nil, err
+			} else if isSystemTx {
+				txNum--
+			}
+		}
+	}
 
 	out := make([]ParityTrace, 0, len(txs))
 	for i, tx := range txs {
+		if i == txNum {
+			rewards, err = api.backend.Engine().CalculateRewards(api.backend.ChainConfig(), statedb, block.Header(), block.Uncles(), block.Withdrawals(), nil)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		txhash := tx.Hash()
 		txpos := uint64(i)
 		// Generate the next state snapshot fast without tracing
@@ -100,11 +120,6 @@ func (api *APITrace) Block(ctx context.Context, number rpc.BlockNumber, gasBailO
 		// Finalize the state so any modifications are written to the trie
 		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 		statedb.Finalise(is158)
-	}
-
-	rewards, err := api.backend.Engine().CalculateRewards(api.backend.ChainConfig(), statedb, block.Header(), block.Uncles(), block.Withdrawals(), nil)
-	if err != nil {
-		return nil, err
 	}
 
 	for _, r := range rewards {
@@ -563,7 +578,7 @@ func (api *APITrace) traceTx(ctx context.Context, message *core.Message, txctx *
 
 	sdMap := make(map[common.Address]*StateDiffAccount)
 	tracer.r.StateDiff = sdMap
-	sd := &StateDiff{sdMap: sdMap}
+	sd := &StateDiff{sdMap: sdMap, evm: vmenv}
 
 	statedb.FinalizeTx(sd)
 	sd.CompareStates(beforeStatedb, statedb)
