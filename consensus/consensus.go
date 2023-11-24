@@ -70,6 +70,27 @@ type ChainReader interface {
 	GetBlock(hash common.Hash, number uint64) *types.Block
 }
 
+type SystemCall func(contract common.Address, data []byte) ([]byte, error)
+
+type RewardKind uint16
+
+const (
+	// RewardAuthor - attributed to the block author.
+	RewardAuthor RewardKind = 0
+	// RewardEmptyStep - attributed to the author(s) of empty step(s) included in the block (AuthorityRound engine).
+	RewardEmptyStep RewardKind = 1
+	// RewardExternal - attributed by an external protocol (e.g. block reward contract).
+	RewardExternal RewardKind = 2
+	// RewardUncle - attributed to the block uncle(s) with given difference.
+	RewardUncle RewardKind = 3
+)
+
+type Reward struct {
+	Beneficiary common.Address
+	Kind        RewardKind
+	Amount      *big.Int
+}
+
 // Engine is an algorithm agnostic consensus engine.
 type Engine interface {
 	// Author retrieves the Ethereum address of the account that minted the given
@@ -133,6 +154,9 @@ type Engine interface {
 
 	// Close terminates any background threads maintained by the consensus engine.
 	Close() error
+
+	CalculateRewards(config *params.ChainConfig, state *state.StateDB, header *types.Header, uncles []*types.Header, withdrawals []*types.Withdrawal, syscall SystemCall,
+	) ([]Reward, error)
 }
 
 // PoW is a consensus engine based on proof-of-work.

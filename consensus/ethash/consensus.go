@@ -486,6 +486,21 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 	return nil
 }
 
+func (ethash *Ethash) CalculateRewards(config *params.ChainConfig, _ *state.StateDB, header *types.Header, uncles []*types.Header, _ []*types.Withdrawal, _ consensus.SystemCall,
+) ([]consensus.Reward, error) {
+	minerReward, uncleRewards := AccumulateRewards(config, header, uncles)
+	rewards := make([]consensus.Reward, 1+len(uncles))
+	rewards[0].Beneficiary = header.Coinbase
+	rewards[0].Kind = consensus.RewardAuthor
+	rewards[0].Amount = minerReward
+	for i, uncle := range uncles {
+		rewards[i+1].Beneficiary = uncle.Coinbase
+		rewards[i+1].Kind = consensus.RewardUncle
+		rewards[i+1].Amount = uncleRewards[i]
+	}
+	return rewards, nil
+}
+
 // Finalize implements consensus.Engine, accumulating the block and uncle rewards,
 // setting the final state on the header
 func (ethash *Ethash) Finalize(chain consensus.ChainHeaderReader, header *types.Header, state *state.StateDB, _ *[]*types.Transaction, uncles []*types.Header, withdrawals []*types.Withdrawal,
@@ -577,4 +592,35 @@ func accumulateRewards(config *params.ChainConfig, state *state.StateDB, header 
 		reward.Add(reward, r)
 	}
 	state.AddBalance(header.Coinbase, reward)
+}
+
+// AccumulateRewards returns rewards for a given block. The mining reward consists
+// of the static blockReward plus a reward for each included uncle (if any). Individual
+// uncle rewards are also returned in an array.
+func AccumulateRewards(config *params.ChainConfig, header *types.Header, uncles []*types.Header) (*big.Int, []*big.Int) {
+	// Select the correct block reward based on chain progression
+	blockReward := FrontierBlockReward
+	if config.IsByzantium(header.Number) {
+		blockReward = ByzantiumBlockReward
+	}
+	if config.IsConstantinople(header.Number) {
+		blockReward = ConstantinopleBlockReward
+	}
+	// Accumulate the rewards for the miner and any included uncles
+	uncleRewards := []*big.Int{}
+	reward := new(big.Int).Set(blockReward)
+	r := new(big.Int)
+	for _, uncle := range uncles {
+		r.Add(uncle.Number, big8)
+		r.Sub(r, header.Number)
+		r.Mul(r, blockReward)
+		r.Div(r, big8)
+		uncleRewards = append(uncleRewards, r)
+		// state.AddBalance(uncle.Coinbase, r)
+
+		r.Div(blockReward, big32)
+		reward.Add(reward, r)
+
+	}
+	return reward, uncleRewards
 }
