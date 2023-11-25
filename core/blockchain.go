@@ -1753,94 +1753,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 	it := newInsertIterator(chain, results, bc.validator)
 	block, err := it.next()
 
-	// Left-trim all the known blocks that don't need to build snapshot
-	if bc.skipBlock(err, it) {
-		// First block (and state) is known
-		//   1. We did a roll-back, and should now do a re-import
-		//   2. The block is stored as a sidechain, and is lying about it's stateroot, and passes a stateroot
-		//      from the canonical chain, which has not been verified.
-		// Skip all known blocks that are behind us.
-		var (
-			reorg   bool
-			current = bc.CurrentBlock()
-		)
-		for block != nil && bc.skipBlock(err, it) {
-			reorg, err = bc.forker.ReorgNeededWithFastFinality(current, block.Header())
-			if err != nil {
-				return it.index, err
-			}
-			if reorg {
-				// Switch to import mode if the forker says the reorg is necessary
-				// and also the block is not on the canonical chain.
-				// In eth2 the forker always returns true for reorg decision (blindly trusting
-				// the external consensus engine), but in order to prevent the unnecessary
-				// reorgs when importing known blocks, the special case is handled here.
-				if block.NumberU64() > current.Number.Uint64() || bc.GetCanonicalHash(block.NumberU64()) != block.Hash() {
-					break
-				}
-			}
-			log.Debug("Ignoring already known block", "number", block.Number(), "hash", block.Hash())
-			stats.ignored++
-
-			block, err = it.next()
-		}
-		// The remaining blocks are still known blocks, the only scenario here is:
-		// During the snap sync, the pivot point is already submitted but rollback
-		// happens. Then node resets the head full block to a lower height via `rollback`
-		// and leaves a few known blocks in the database.
-		//
-		// When node runs a snap sync again, it can re-import a batch of known blocks via
-		// `insertChain` while a part of them have higher total difficulty than current
-		// head full block(new pivot point).
-		for block != nil && bc.skipBlock(err, it) {
-			log.Debug("Writing previously known block", "number", block.Number(), "hash", block.Hash())
-			if err := bc.writeKnownBlock(block); err != nil {
-				return it.index, err
-			}
-			lastCanon = block
-
-			block, err = it.next()
-		}
-		// Falls through to the block import
-	}
-	switch {
-	// First block is pruned
-	case errors.Is(err, consensus.ErrPrunedAncestor):
-		if setHead {
-			// First block is pruned, insert as sidechain and reorg only if TD grows enough
-			log.Debug("Pruned ancestor, inserting as sidechain", "number", block.Number(), "hash", block.Hash())
-			return bc.insertSideChain(block, it)
-		} else {
-			// We're post-merge and the parent is pruned, try to recover the parent state
-			log.Debug("Pruned ancestor", "number", block.Number(), "hash", block.Hash())
-			_, err := bc.recoverAncestors(block)
-			return it.index, err
-		}
-	// First block is future, shove it (and all children) to the future queue (unknown ancestor)
-	case errors.Is(err, consensus.ErrFutureBlock) || (errors.Is(err, consensus.ErrUnknownAncestor) && bc.futureBlocks.Contains(it.first().ParentHash())):
-		for block != nil && (it.index == 0 || errors.Is(err, consensus.ErrUnknownAncestor)) {
-			log.Debug("Future block, postponing import", "number", block.Number(), "hash", block.Hash())
-			if err := bc.addFutureBlock(block); err != nil {
-				return it.index, err
-			}
-			block, err = it.next()
-		}
-		stats.queued += it.processed()
-		stats.ignored += it.remaining()
-
-		// If there are any still remaining, mark as ignored
-		return it.index, err
-
-	// Some other error(except ErrKnownBlock) occurred, abort.
-	// ErrKnownBlock is allowed here since some known blocks
-	// still need re-execution to generate snapshots that are missing
-	case err != nil && !errors.Is(err, ErrKnownBlock):
-		bc.futureBlocks.Remove(block.Hash())
-		stats.ignored += len(it.chain)
-		bc.reportBlock(block, nil, err)
-		return it.index, err
-	}
-
 	for ; block != nil && err == nil || errors.Is(err, ErrKnownBlock); block, err = it.next() {
 		// If the chain is terminating, stop processing blocks
 		if bc.insertStopped() {
@@ -1851,45 +1763,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		if BadHashes[block.Hash()] {
 			bc.reportBlock(block, nil, ErrBannedHash)
 			return it.index, ErrBannedHash
-		}
-		// If the block is known (in the middle of the chain), it's a special case for
-		// Clique blocks where they can share state among each other, so importing an
-		// older block might complete the state of the subsequent one. In this case,
-		// just skip the block (we already validated it once fully (and crashed), since
-		// its header and body was already in the database). But if the corresponding
-		// snapshot layer is missing, forcibly rerun the execution to build it.
-		if bc.skipBlock(err, it) {
-			logger := log.Debug
-			if bc.chainConfig.Clique == nil {
-				logger = log.Warn
-			}
-			logger("Inserted known block", "number", block.Number(), "hash", block.Hash(),
-				"uncles", len(block.Uncles()), "txs", len(block.Transactions()), "gas", block.GasUsed(),
-				"root", block.Root())
-
-			// Special case. Commit the empty receipt slice if we meet the known
-			// block in the middle. It can only happen in the clique chain. Whenever
-			// we insert blocks via `insertSideChain`, we only commit `td`, `header`
-			// and `body` if it's non-existent. Since we don't have receipts without
-			// reexecution, so nothing to commit. But if the sidechain will be adopted
-			// as the canonical chain eventually, it needs to be reexecuted for missing
-			// state, but if it's this special case here(skip reexecution) we will lose
-			// the empty receipt entry.
-			if len(block.Transactions()) == 0 {
-				rawdb.WriteReceipts(bc.db, block.Hash(), block.NumberU64(), nil)
-			} else {
-				log.Error("Please file an issue, skip known block execution without receipt",
-					"hash", block.Hash(), "number", block.NumberU64())
-			}
-			if err := bc.writeKnownBlock(block); err != nil {
-				return it.index, err
-			}
-			stats.processed++
-
-			// We can assume that logs are empty here, since the only way for consecutive
-			// Clique blocks to have the same state is if there are no transactions.
-			lastCanon = block
-			continue
 		}
 
 		// Retrieve the parent block and it's state to execute on top
@@ -1905,7 +1778,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		bc.updateHighestVerifiedHeader(block.Header())
 
 		// Enable prefetching to pull in trie node paths while processing transactions
-		statedb.StartPrefetcher("chain")
+		// statedb.StartPrefetcher("chain")
 		// interruptCh := make(chan struct{})
 		// For diff sync, it may fallback to full sync, so we still do prefetch
 		// if len(block.Transactions()) >= prefetchTxNumber {

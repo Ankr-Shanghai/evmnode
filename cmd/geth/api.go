@@ -11,7 +11,6 @@ import (
 
 func getAllAPIs() []rpc.API {
 	apis := ethereum.APIs()
-	apis = append(apis, tracers.APIs(ethereum.APIBackend)...)
 	apis = append(apis, extapis()...)
 
 	return apis
@@ -25,6 +24,9 @@ func extapis() []rpc.API {
 		}, {
 			Namespace: "net",
 			Service:   newNetAPI(ethereum.NetworkID),
+		}, {
+			Namespace: "debug",
+			Service:   tracers.NewAPI(ethereum.APIBackend),
 		},
 	}
 }
